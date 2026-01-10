@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - FishCare Pro</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-brand">
+            <i class="fas fa-fish"></i>
+            <span>FishCare Pro</span>
+        </div>
+        
+        <div class="nav-links">
+            <a href="dashboard.html">
+                <i class="fas fa-home"></i> Dashboard
+            </a>
+            <a href="history.html">
+                <i class="fas fa-history"></i> History
+            </a>
+            <a href="#">
+                <i class="fas fa-tint"></i> PH Monitoring
+            </a>
+            <a href="profile.html" class="active">
+                <i class="fas fa-user"></i> Profile
+            </a>
+        </div>
+        
+        <div class="nav-user">
+            <div class="user-dropdown">
+                <div class="user-info">
+                    <i class="fas fa-user-circle"></i>
+                    <span id="userName">Loading...</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Profile Content -->
+    <div class="profile-container">
+        <div class="profile-header">
+            <h1><i class="fas fa-user-circle"></i> My Profile</h1>
+            <p>Manage your account and hardware settings</p>
+        </div>
+        
+        <div class="profile-grid">
+            <!-- Left Column: Profile Info -->
+            <div class="profile-left">
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-user-edit"></i> Personal Information</h2>
+                    </div>
+                    
+                    <form id="profileForm">
+                        <div class="form-group">
+                            <label for="profileName">
+                                <i class="fas fa-user"></i> Full Name
+                            </label>
+                            <input type="text" id="profileName" placeholder="Enter your full name">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="profileEmail">
+                                <i class="fas fa-envelope"></i> Email Address
+                            </label>
+                            <input type="email" id="profileEmail" disabled>
+                            <small>Email cannot be changed</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="profileHardware">
+                                <i class="fas fa-microchip"></i> Hardware ID
+                            </label>
+                            <input type="text" id="profileHardware" placeholder="Enter your device ID">
+                            <small>For PH monitoring device connection</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="profileJoined">
+                                <i class="fas fa-calendar-alt"></i> Member Since
+                            </label>
+                            <input type="text" id="profileJoined" disabled>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save Changes
+                            </button>
+                            <button type="button" class="btn btn-outline" onclick="loadProfileData()">
+                                <i class="fas fa-undo"></i> Reset
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- Account Statistics -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-chart-pie"></i> Account Statistics</h2>
+                    </div>
+                    <div class="stats-cards">
+                        <div class="stat-card">
+                            <i class="fas fa-search"></i>
+                            <div>
+                                <h3 id="statTotalScans">0</h3>
+                                <p>Total Scans</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <i class="fas fa-clock"></i>
+                            <div>
+                                <h3 id="statLastScan">--</h3>
+                                <p>Last Scan</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <i class="fas fa-microchip"></i>
+                            <div>
+                                <h3 id="statHardware">No</h3>
+                                <p>Hardware Connected</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Column: Settings -->
+            <div class="profile-right">
+                <!-- Security Settings -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-shield-alt"></i> Security Settings</h2>
+                    </div>
+                    
+                    <div class="settings-list">
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <h4>Change Password</h4>
+                                <p>Update your account password</p>
+                            </div>
+                            <button class="btn btn-outline" onclick="showPasswordModal()">
+                                <i class="fas fa-key"></i> Change
+                            </button>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <h4>Two-Factor Authentication</h4>
+                                <p>Add extra security to your account</p>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="twoFactorToggle">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <h4>Email Notifications</h4>
+                                <p>Receive alerts for critical findings</p>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="emailToggle" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Hardware Setup -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-tools"></i> Hardware Setup</h2>
+                    </div>
+                    
+                    <div class="hardware-guide">
+                        <h4><i class="fas fa-microchip"></i> Connect Your Device</h4>
+                        <ol class="setup-steps">
+                            <li>Enter your device ID above</li>
+                            <li>Ensure device is connected to WiFi</li>
+                            <li>Open Blynk app on your phone</li>
+                            <li>Pair with device using QR code</li>
+                            <li>Data will sync automatically</li>
+                        </ol>
+                        
+                        <div class="qr-code">
+                            <div class="qr-placeholder">
+                                <i class="fas fa-qrcode"></i>
+                                <p>Device QR Code</p>
+                            </div>
+                            <p><small>Scan with Blynk app</small></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Account Actions -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-cog"></i> Account Actions</h2>
+                    </div>
+                    
+                    <div class="danger-zone">
+                        <h4><i class="fas fa-exclamation-triangle"></i> Danger Zone</h4>
+                        
+                        <div class="danger-actions">
+                            <button class="btn btn-danger" onclick="exportAllData()">
+                                <i class="fas fa-download"></i> Export All Data
+                            </button>
+                            <button class="btn btn-danger" onclick="clearHistory()">
+                                <i class="fas fa-trash"></i> Clear History
+                            </button>
+                            <button class="btn btn-danger" onclick="deleteAccount()">
+                                <i class="fas fa-user-slash"></i> Delete Account
+                            </button>
+                        </div>
+                        
+                        <p class="warning-note">
+                            <i class="fas fa-info-circle"></i>
+                            These actions are irreversible. Proceed with caution.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Password Modal -->
+    <div class="modal" id="passwordModal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-key"></i> Change Password</h3>
+                <button class="close-btn" onclick="closePasswordModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="passwordForm">
+                    <div class="form-group">
+                        <label for="currentPassword">Current Password</label>
+                        <input type="password" id="currentPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="newPassword">New Password</label>
+                        <input type="password" id="newPassword" required minlength="6">
+                    </div>
+                    <div class="form-group">
+                        <label for="confirmPassword">Confirm New Password</label>
+                        <input type="password" id="confirmPassword" required>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Update Password</button>
+                        <button type="button" class="btn btn-outline" onclick="closePasswordModal()">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p>© 2024 FishCare Pro - AI Fish Disease Detection System</p>
+    </footer>
+
+    <script src="auth.js"></script>
+    <script>
+        // Profile page JavaScript
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check authentication
+            if (!checkAuth()) {
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            // Load profile data
+            loadProfileData();
+            loadProfileStats();
+            
+            // Setup form submission
+            document.getElementById('profileForm').addEventListener('submit', updateProfile);
+            
+            // Setup logout
+            document.getElementById('logoutBtn').addEventListener('click', logout);
+        });
+        
+        async function loadProfileData() {
+            try {
+                const user = JSON.parse(localStorage.getItem('user'));
+                if (user) {
+                    document.getElementById('userName').textContent = user.name;
+                    document.getElementById('profileName').value = user.name;
+                    document.getElementById('profileEmail').value = user.email;
+                    document.getElementById('profileHardware').value = user.hardware_id || '';
+                }
+                
+                // Load detailed profile from backend
+                const response = await fetch(`${BACKEND_URL}/profile`, {
+                    headers: getAuthHeaders()
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        const profile = data.profile;
+                        document.getElementById('profileName').value = profile.name;
+                        document.getElementById('profileHardware').value = profile.hardware_id || '';
+                        document.getElementById('profileJoined').value = new Date(profile.created_at).toLocaleDateString();
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading profile:', error);
+            }
+        }
+        
+        async function loadProfileStats() {
+            // Load user statistics
+            try {
+                const response = await fetch(`${BACKEND_URL}/history?limit=1`, {
+                    headers: getAuthHeaders()
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        document.getElementById('statTotalScans').textContent = data.count;
+                        
+                        if (data.history.length > 0) {
+                            const lastScan = new Date(data.history[0].timestamp);
+                            document.getElementById('statLastScan').textContent = lastScan.toLocaleDateString();
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+        
+        async function updateProfile(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('profileName').value;
+            const hardwareId = document.getElementById('profileHardware').value;
+            
+            try {
+                const formData = new FormData();
+                if (name) formData.append('name', name);
+                if (hardwareId) formData.append('hardware_id', hardwareId);
+                
+                const response = await fetch(`${BACKEND_URL}/profile`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Profile updated successfully!');
+                    // Update local storage
+                    const user = JSON.parse(localStorage.getItem('user'));
+                    user.name = name;
+                    user.hardware_id = hardwareId;
+                    localStorage.setItem('user', JSON.stringify(user));
+                    document.getElementById('userName').textContent = name;
+                } else {
+                    alert('Error updating profile: ' + data.detail);
+                }
+            } catch (error) {
+                alert('Network error. Please try again.');
+                console.error('Update error:', error);
+            }
+        }
+        
+        function showPasswordModal() {
+            document.getElementById('passwordModal').style.display = 'flex';
+        }
+        
+        function closePasswordModal() {
+            document.getElementById('passwordModal').style.display = 'none';
+            document.getElementById('passwordForm').reset();
+        }
+        
+        function exportAllData() {
+            if (confirm('Export all your data as CSV?')) {
+                // Implement export functionality
+                alert('Export feature coming soon!');
+            }
+        }
+        
+        function clearHistory() {
+            if (confirm('Are you sure you want to clear all history? This cannot be undone.')) {
+                // Implement clear history
+                alert('History cleared!');
+            }
+        }
+        
+        function deleteAccount() {
+            if (confirm('Are you sure you want to delete your account? ALL data will be lost.')) {
+                if (confirm('This is your final warning. Type DELETE to confirm:')) {
+                    // Implement account deletion
+                    alert('Account deletion feature coming soon!');
+                }
+            }
+        }
+    </script>
+</body>
+</html>

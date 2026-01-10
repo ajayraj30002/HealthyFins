@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FishCare Pro - Login</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2c8c99;
+            --primary-dark: #1a5f6b;
+            --secondary: #ff7e5f;
+            --light: #f8f9fa;
+            --dark: #343a40;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            min-height: 700px;
+        }
+        
+        /* Left Side - Branding */
+        .brand-side {
+            flex: 1;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 60px 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .brand-side::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M0,0 L100,0 L100,100 Z" fill="white" opacity="0.1"/></svg>');
+        }
+        
+        .logo {
+            font-size: 3.5rem;
+            margin-bottom: 20px;
+        }
+        
+        .brand-title {
+            font-size: 2.8rem;
+            font-weight: 800;
+            margin-bottom: 15px;
+            line-height: 1.2;
+        }
+        
+        .brand-subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+        
+        .features {
+            margin-top: 40px;
+        }
+        
+        .feature-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+        }
+        
+        .feature-item i {
+            margin-right: 15px;
+            color: #ffd166;
+            font-size: 1.3rem;
+        }
+        
+        /* Right Side - Forms */
+        .form-side {
+            flex: 1;
+            padding: 60px 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .form-container {
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        
+        .form-title {
+            font-size: 2rem;
+            color: var(--dark);
+            margin-bottom: 10px;
+        }
+        
+        .form-subtitle {
+            color: #666;
+            margin-bottom: 40px;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--dark);
+            font-weight: 500;
+        }
+        
+        input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(44, 140, 153, 0.1);
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(44, 140, 153, 0.3);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, var(--secondary) 0%, #ff6b4a 100%);
+        }
+        
+        .form-toggle {
+            text-align: center;
+            margin-top: 30px;
+            color: #666;
+        }
+        
+        .form-toggle a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .form-toggle a:hover {
+            text-decoration: underline;
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .hardware-note {
+            background: #e9f7fe;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            font-size: 0.9rem;
+            color: #31708f;
+            border-left: 4px solid var(--primary);
+        }
+        
+        .hardware-note i {
+            color: var(--primary);
+            margin-right: 10px;
+        }
+        
+        /* Form Switcher */
+        .form-page {
+            display: none;
+        }
+        
+        .form-page.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+                min-height: auto;
+            }
+            
+            .brand-side {
+                padding: 40px 20px;
+                text-align: center;
+            }
+            
+            .form-side {
+                padding: 40px 20px;
+            }
+            
+            .brand-title {
+                font-size: 2.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Left Side - Branding -->
+        <div class="brand-side">
+            <div class="logo">
+                <i class="fas fa-fish"></i>
+            </div>
+            <h1 class="brand-title">FishCare Pro</h1>
+            <p class="brand-subtitle">AI-powered fish disease detection with real-time health monitoring for your aquaculture</p>
+            
+            <div class="features">
+                <div class="feature-item">
+                    <i class="fas fa-robot"></i>
+                    <span>AI Disease Detection</span>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Real-time PH Monitoring</span>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-history"></i>
+                    <span>Prediction History</span>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-user-shield"></i>
+                    <span>Secure User Accounts</span>
+                </div>
+            </div>
+            
+            <div style="margin-top: 50px; opacity: 0.8;">
+                <p><i class="fas fa-microchip"></i> Compatible with Arduino/Raspberry Pi hardware</p>
+            </div>
+        </div>
+        
+        <!-- Right Side - Forms -->
+        <div class="form-side">
+            <div class="form-container">
+                <!-- Success/Error Messages -->
+                <div class="alert" id="successAlert"></div>
+                <div class="alert" id="errorAlert"></div>
+                
+                <!-- Login Form -->
+                <div class="form-page active" id="loginPage">
+                    <h2 class="form-title">Welcome Back</h2>
+                    <p class="form-subtitle">Sign in to your FishCare Pro account</p>
+                    
+                    <form id="loginForm">
+                        <div class="form-group">
+                            <label for="loginEmail"><i class="fas fa-envelope"></i> Email Address</label>
+                            <input type="email" id="loginEmail" placeholder="you@example.com" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="loginPassword"><i class="fas fa-lock"></i> Password</label>
+                            <input type="password" id="loginPassword" placeholder="Enter your password" required>
+                        </div>
+                        
+                        <button type="submit" class="btn">
+                            <i class="fas fa-sign-in-alt"></i> Sign In
+                        </button>
+                    </form>
+                    
+                    <div class="form-toggle">
+                        Don't have an account? <a onclick="showSignup()">Sign up here</a>
+                    </div>
+                </div>
+                
+                <!-- Signup Form -->
+                <div class="form-page" id="signupPage">
+                    <h2 class="form-title">Create Account</h2>
+                    <p class="form-subtitle">Join FishCare Pro for free</p>
+                    
+                    <form id="signupForm">
+                        <div class="form-group">
+                            <label for="signupName"><i class="fas fa-user"></i> Full Name</label>
+                            <input type="text" id="signupName" placeholder="John Smith" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="signupEmail"><i class="fas fa-envelope"></i> Email Address</label>
+                            <input type="email" id="signupEmail" placeholder="you@example.com" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="signupPassword"><i class="fas fa-lock"></i> Password</label>
+                            <input type="password" id="signupPassword" placeholder="Create a password" required minlength="6">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="hardwareId"><i class="fas fa-microchip"></i> Hardware ID (Optional)</label>
+                            <input type="text" id="hardwareId" placeholder="e.g., ARD-FISH-001">
+                            <small style="color: #666; display: block; margin-top: 5px;">For PH monitoring device integration</small>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-secondary">
+                            <i class="fas fa-user-plus"></i> Create Account
+                        </button>
+                    </form>
+                    
+                    <div class="form-toggle">
+                        Already have an account? <a onclick="showLogin()">Sign in here</a>
+                    </div>
+                    
+                    <div class="hardware-note">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Hardware Integration:</strong> Enter your device ID to connect PH monitoring. You can add this later in your profile.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Backend URL (Update after deployment)
+        const BACKEND_URL = "http://localhost:8000"; // Change to your Render URL
+        
+        // Form switching
+        function showSignup() {
+            document.getElementById('loginPage').classList.remove('active');
+            document.getElementById('signupPage').classList.add('active');
+            clearAlerts();
+        }
+        
+        function showLogin() {
+            document.getElementById('signupPage').classList.remove('active');
+            document.getElementById('loginPage').classList.add('active');
+            clearAlerts();
+        }
+        
+        function showAlert(type, message) {
+            const alertDiv = type === 'success' ? 
+                document.getElementById('successAlert') : 
+                document.getElementById('errorAlert');
+            
+            alertDiv.textContent = message;
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.style.display = 'block';
+            
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                alertDiv.style.display = 'none';
+            }, 5000);
+        }
+        
+        function clearAlerts() {
+            document.getElementById('successAlert').style.display = 'none';
+            document.getElementById('errorAlert').style.display = 'none';
+        }
+        
+        // Login handler
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            try {
+                const formData = new FormData();
+                formData.append('email', email);
+                formData.append('password', password);
+                
+                const response = await fetch(`${BACKEND_URL}/login`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Save token and user info
+                    localStorage.setItem('token', data.access_token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    
+                    showAlert('success', `Welcome back, ${data.user.name}!`);
+                    
+                    // Redirect to dashboard after 1 second
+                    setTimeout(() => {
+                        window.location.href = 'dashboard.html';
+                    }, 1000);
+                } else {
+                    showAlert('error', data.detail || 'Login failed');
+                }
+                
+            } catch (error) {
+                showAlert('error', 'Network error. Please try again.');
+                console.error('Login error:', error);
+            }
+        });
+        
+        // Signup handler
+        document.getElementById('signupForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('signupName').value;
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+            const hardwareId = document.getElementById('hardwareId').value;
+            
+            try {
+                const formData = new FormData();
+                formData.append('name', name);
+                formData.append('email', email);
+                formData.append('password', password);
+                if (hardwareId) {
+                    formData.append('hardware_id', hardwareId);
+                }
+                
+                const response = await fetch(`${BACKEND_URL}/register`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Save token and user info
+                    localStorage.setItem('token', data.access_token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    
+                    showAlert('success', `Account created successfully! Welcome, ${name}!`);
+                    
+                    // Redirect to dashboard after 1 second
+                    setTimeout(() => {
+                        window.location.href = 'dashboard.html';
+                    }, 1000);
+                } else {
+                    showAlert('error', data.detail || 'Registration failed');
+                }
+                
+            } catch (error) {
+                showAlert('error', 'Network error. Please try again.');
+                console.error('Signup error:', error);
+            }
+        });
+        
+        // Check if already logged in
+        window.addEventListener('load', function() {
+            const token = localStorage.getItem('token');
+            if (token) {
+                window.location.href = 'dashboard.html';
+            }
+            
+            // Test backend connection
+            fetch(`${BACKEND_URL}/health`)
+                .then(response => {
+                    if (!response.ok) {
+                        console.warn('Backend not reachable. Using mock mode.');
+                    }
+                })
+                .catch(() => {
+                    console.warn('Backend connection failed. Will use mock data.');
+                });
+        });
+    </script>
+</body>
+</html>

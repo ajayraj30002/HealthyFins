@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Cyber-shot Minimal UI</title>
+<style>
+body {
+  background:#111;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+  margin:0;
+  font-family:Arial, sans-serif;
+}
+
+.screen {
+  width:600px;
+  height:350px;
+  background:#000; /* full black */
+  border:8px solid #000;
+  position:relative;
+  overflow:hidden;
+  color:white;
+  font-size:14px;
+}
+
+/* Top-left text */
+.top-left {
+  position:absolute;
+  top:8px; left:10px;
+}
+
+/* Old-style battery icon */
+.battery {
+  position:absolute;
+  top:8px; right:10px;
+  width:30px;
+  height:14px;
+  border:2px solid white;
+  border-radius:2px;
+  display:flex;
+  justify-content:space-between;
+  padding:2px;
+}
+.battery::after {
+  content:"";
+  position:absolute;
+  right:-6px;
+  top:3px;
+  width:4px;
+  height:8px;
+  background:white;
+  border-radius:1px;
+}
+.bar {
+  width:6px;
+  background:white;
+}
+
+/* Bottom text areas */
+.bottom-left {
+  position:absolute;
+  bottom:10px; left:10px;
+}
+.bottom-center {
+  position:absolute;
+  bottom:10px; left:50%;
+  transform:translateX(-50%);
+}
+.bottom-right {
+  position:absolute;
+  bottom:10px; right:10px;
+}
+
+/* Right-side vertical icons */
+.right-menu {
+  position:absolute;
+  top:50%;
+  right:5px;
+  transform:translateY(-50%);
+  font-size:12px;
+  text-align:right;
+  line-height:20px;
+  opacity:0.6;
+}
+</style>
+</head>
+<body>
+
+<div class="screen">
+
+  <!-- Upper UI -->
+  <div class="top-left">4:3</div>
+
+  <!-- Battery (3 bars here — adjust count as needed) -->
+  <div class="battery">
+    <div class="bar"></div>
+    <div class="bar"></div>
+    <div class="bar"></div>
+    <div class="bar"></div>
+  </div>
+
+  <!-- Lower UI -->
+  <div class="bottom-left">100-0002</div>
+  <div class="bottom-center">◄ BACK / NEXT ► — DISPLAY</div>
+  <div class="bottom-right">16M</div>
+
+  <!-- Right-side icons -->
+  <div class="right-menu">
+    📷<br>
+    🏠<br>
+    🖼️<br>
+    ⚙️
+  </div>
+
+</div>
+
+</body>
+</html>

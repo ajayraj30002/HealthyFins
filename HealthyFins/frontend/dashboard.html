@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - FishCare Pro</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-brand">
+            <i class="fas fa-fish"></i>
+            <span>FishCare Pro</span>
+        </div>
+        
+        <div class="nav-links">
+            <a href="dashboard.html" class="active">
+                <i class="fas fa-home"></i> Dashboard
+            </a>
+            <a href="history.html">
+                <i class="fas fa-history"></i> History
+            </a>
+            <a href="#" id="phMonitoringBtn">
+                <i class="fas fa-tint"></i> PH Monitoring
+            </a>
+        </div>
+        
+        <div class="nav-user">
+            <div class="user-dropdown">
+                <div class="user-info">
+                    <i class="fas fa-user-circle"></i>
+                    <span id="userName">Loading...</span>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+                <div class="dropdown-menu">
+                    <a href="profile.html">
+                        <i class="fas fa-user"></i> Profile
+                    </a>
+                    <a href="history.html">
+                        <i class="fas fa-history"></i> History
+                    </a>
+                    <div class="divider"></div>
+                    <a href="#" id="logoutBtn">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="dashboard-container">
+        <!-- Welcome Banner -->
+        <div class="welcome-banner">
+            <div class="welcome-text">
+                <h1>Welcome back, <span id="userGreeting">User</span>!</h1>
+                <p>Monitor your fish health with AI-powered disease detection</p>
+            </div>
+            <div class="welcome-stats">
+                <div class="stat-card mini">
+                    <i class="fas fa-search"></i>
+                    <div>
+                        <h3 id="totalScans">0</h3>
+                        <p>Total Scans</p>
+                    </div>
+                </div>
+                <div class="stat-card mini">
+                    <i class="fas fa-check-circle"></i>
+                    <div>
+                        <h3 id="healthyCount">0</h3>
+                        <p>Healthy</p>
+                    </div>
+                </div>
+                <div class="stat-card mini">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <div>
+                        <h3 id="diseaseCount">0</h3>
+                        <p>Disease Found</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="dashboard-grid">
+            <!-- Left Column -->
+            <div class="left-column">
+                <!-- Disease Detection Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-camera"></i> Disease Detection</h2>
+                        <p>Upload fish image for AI analysis</p>
+                    </div>
+                    
+                    <div class="upload-area" id="uploadArea">
+                        <div class="upload-icon">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                        </div>
+                        <h3>Drop image here or click to browse</h3>
+                        <p>Supports JPG, PNG, BMP • Max 10MB</p>
+                        <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+                            <i class="fas fa-upload"></i> Choose Image
+                        </button>
+                        <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                    </div>
+                    
+                    <div class="preview-section" id="previewSection" style="display: none;">
+                        <h4>Image Preview</h4>
+                        <div class="image-preview">
+                            <img id="previewImage" src="" alt="Preview">
+                        </div>
+                        <div class="preview-actions">
+                            <button class="btn btn-primary" onclick="analyzeImage()">
+                                <i class="fas fa-search"></i> Analyze Now
+                            </button>
+                            <button class="btn btn-outline" onclick="clearImage()">
+                                <i class="fas fa-times"></i> Remove
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Loading -->
+                    <div class="loading" id="loadingSection" style="display: none;">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>AI is analyzing your fish image...</p>
+                    </div>
+                    
+                    <!-- Results -->
+                    <div class="results-section" id="resultsSection" style="display: none;">
+                        <div class="result-header">
+                            <h3><i class="fas fa-stethoscope"></i> Diagnosis Results</h3>
+                            <span class="badge" id="diseaseBadge">Healthy</span>
+                        </div>
+                        
+                        <div class="result-content">
+                            <div class="disease-info">
+                                <h2 id="resultDisease">Healthy Fish</h2>
+                                <div class="confidence-meter">
+                                    <div class="confidence-text">
+                                        Confidence: <strong id="confidenceValue">95%</strong>
+                                    </div>
+                                    <div class="meter-bar">
+                                        <div class="meter-fill" id="confidenceFill" style="width: 95%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="treatment-box">
+                                <h4><i class="fas fa-capsules"></i> Recommended Treatment</h4>
+                                <p id="treatmentText">Continue regular maintenance with weekly water changes.</p>
+                            </div>
+                            
+                            <div class="action-buttons">
+                                <button class="btn btn-primary" onclick="saveResult()">
+                                    <i class="fas fa-save"></i> Save to History
+                                </button>
+                                <button class="btn btn-outline" onclick="newAnalysis()">
+                                    <i class="fas fa-redo"></i> Analyze Another
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Quick Stats -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-chart-bar"></i> Quick Stats</h2>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-icon success">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="statHealthy">0</h3>
+                                <p>Healthy Fish</p>
+                            </div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-icon warning">
+                                <i class="fas fa-exclamation"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="statWarning">0</h3>
+                                <p>Minor Issues</p>
+                            </div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-icon danger">
+                                <i class="fas fa-times"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="statCritical">0</h3>
+                                <p>Critical Cases</p>
+                            </div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-icon info">
+                                <i class="fas fa-percentage"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="statAccuracy">0%</h3>
+                                <p>AI Accuracy</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Column -->
+            <div class="right-column">
+                <!-- Recent History -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-history"></i> Recent History</h2>
+                        <a href="history.html" class="view-all">View All</a>
+                    </div>
+                    <div class="history-list" id="recentHistory">
+                        <div class="empty-state">
+                            <i class="fas fa-clock"></i>
+                            <p>No scans yet. Upload your first fish image!</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- PH Monitoring -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-tint"></i> PH Monitoring</h2>
+                        <span class="status-badge" id="phStatus">Disconnected</span>
+                    </div>
+                    
+                    <div class="ph-container">
+                        <div class="ph-display">
+                            <div class="ph-value">
+                                <h1 id="phReading">--.--</h1>
+                                <p>Current PH Level</p>
+                            </div>
+                            <div class="ph-gauge">
+                                <div class="gauge">
+                                    <div class="gauge-fill" id="phGaugeFill"></div>
+                                </div>
+                                <div class="gauge-labels">
+                                    <span>0</span>
+                                    <span>7</span>
+                                    <span>14</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="ph-info">
+                            <div class="info-item">
+                                <i class="fas fa-thermometer-half"></i>
+                                <div>
+                                    <h4>Temperature</h4>
+                                    <p id="tempValue">-- °C</p>
+                                </div>
+                            </div>
+                            <div class="info-item">
+                                <i class="fas fa-water"></i>
+                                <div>
+                                    <h4>Turbidity</h4>
+                                    <p id="turbidityValue">-- NTU</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="ph-actions">
+                            <button class="btn btn-primary" onclick="refreshPHData()">
+                                <i class="fas fa-sync-alt"></i> Refresh Data
+                            </button>
+                            <button class="btn btn-outline" onclick="connectHardware()">
+                                <i class="fas fa-microchip"></i> Connect Hardware
+                            </button>
+                        </div>
+                        
+                        <div class="ph-note">
+                            <i class="fas fa-info-circle"></i>
+                            <p>Connect your Arduino/Raspberry Pi device for real-time monitoring</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Quick Actions -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-bolt"></i> Quick Actions</h2>
+                    </div>
+                    <div class="actions-grid">
+                        <button class="action-btn" onclick="window.location.href='history.html'">
+                            <i class="fas fa-history"></i>
+                            <span>View Full History</span>
+                        </button>
+                        <button class="action-btn" onclick="window.location.href='profile.html'">
+                            <i class="fas fa-user-cog"></i>
+                            <span>Update Profile</span>
+                        </button>
+                        <button class="action-btn" onclick="exportData()">
+                            <i class="fas fa-download"></i>
+                            <span>Export Data</span>
+                        </button>
+                        <button class="action-btn" onclick="showTips()">
+                            <i class="fas fa-lightbulb"></i>
+                            <span>Fish Care Tips</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p>© 2024 FishCare Pro - AI Fish Disease Detection System</p>
+        <p>For aquaculture professionals and hobbyists</p>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="auth.js"></script>
+    <script src="script.js"></script>
+    
+    <script>
+        // Dashboard specific JavaScript
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check authentication
+            if (!checkAuth()) {
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            // Load user data
+            loadUserData();
+            loadDashboardStats();
+            loadRecentHistory();
+            loadPHData();
+            
+            // Setup file upload
+            setupFileUpload();
+            
+            // Setup logout
+            document.getElementById('logoutBtn').addEventListener('click', logout);
+            
+            // Setup PH monitoring button
+            document.getElementById('phMonitoringBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                loadPHData(true);
+            });
+            
+            // Setup user dropdown
+            setupUserDropdown();
+        });
+    </script>
+</body>
+</html>
