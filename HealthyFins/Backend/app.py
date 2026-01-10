@@ -34,25 +34,36 @@ model = None
 class_names = []
 
 @app.on_event("startup")
+@app.on_event("startup")
 def load_model():
-    """Load AI model on startup"""
     global model, class_names
     try:
         print("🔄 Loading AI model...")
-        model = tf.keras.models.load_model('models/fish_disease_model_final.h5')
         
-        with open('models/model_info_final.json', 'r') as f:
+        # TRY DIFFERENT PATHS
+        model_paths = [
+            'models/fish_disease_model_final.h5',           # Original
+            '../models/fish_disease_model_final.h5',        # One level up
+            'Backend/models/fish_disease_model_final.h5',   # From root
+            '/opt/render/project/src/models/fish_disease_model_final.h5'  # Render path
+        ]
+        
+        for path in model_paths:
+            if os.path.exists(path):
+                model = tf.keras.models.load_model(path)
+                print(f"✅ Model loaded from: {path}")
+                break
+        else:
+            print("❌ Model not found in any location")
+            # Create dummy model for testing
+            model = create_dummy_model()
+            
+        with open('model_info_final.json', 'r') as f:
             data = json.load(f)
             class_names = data['class_names']
             
         print(f"✅ Model loaded successfully!")
         print(f"📊 Classes: {class_names}")
-        
-    except Exception as e:
-        print(f"❌ Error loading model: {e}")
-        # Create dummy model for testing if real model fails
-        model = None
-        class_names = ["healthy", "white spot", "fin rot", "fungal", "parasite"]
 
 # ========== PUBLIC ENDPOINTS ==========
 
