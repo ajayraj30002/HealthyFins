@@ -93,17 +93,11 @@ app = FastAPI(
     version="2.0.0"
 )
 
-# CORS configuration
+# TEMPORARY: Allow everything during testing
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://fish-disease-detector.vercel.app",  # Your actual Vercel domain
-        "https://healthy-fins.vercel.app",           # If you have this
-        "http://localhost:3000",
-        "http://localhost:8000",
-        "http://127.0.0.1:3000",
-    ],
-    allow_credentials=True,        # Can be True with specific origins
+    allow_origins=["*"],
+    allow_credentials=False,  # Changed to False
     allow_methods=["*"],
     allow_headers=["*"],
 )
