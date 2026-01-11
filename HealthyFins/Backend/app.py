@@ -96,11 +96,7 @@ app = FastAPI(
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-    "https://fish-disease-detector.vercel.app",
-    "http://localhost:3000",
-    "http://localhost:8000"
-    ],
+    allow_origins=["https://fish-disease-detector.vercel.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
