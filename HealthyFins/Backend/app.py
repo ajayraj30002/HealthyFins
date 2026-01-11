@@ -96,11 +96,17 @@ app = FastAPI(
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://fish-disease-detector.vercel.app"],
+    allow_origins=[
+        "https://fish-disease-detector.vercel.app",  # Your Vercel domain
+        "http://localhost:3000",                     # Local development
+        "http://localhost:8000",                     # Alternative local
+        "http://127.0.0.1:3000",                     # Another local
+        "*"                                          # TEMPORARY: Allow all during testing
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-)
+)    
 
 # Global variables
 model = None
