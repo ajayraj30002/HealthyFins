@@ -562,3 +562,23 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     print(f"🌐 Starting server on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
+
+# ========== PORT BINDING FIX ==========
+import uvicorn
+
+# Get port from Render environment variable
+PORT = int(os.environ.get("PORT", 8000))
+
+if __name__ == "__main__":
+    print(f"🚀 Starting Fish Disease Detection API on port {PORT}")
+    print(f"🌐 Access at: http://0.0.0.0:{PORT}")
+    print(f"📊 Model loaded: {model is not None}")
+    print(f"📈 Classes: {class_names}")
+    
+    uvicorn.run(
+        app,
+        host="0.0.0.0",
+        port=PORT,
+        log_level="info",
+        access_log=True
+    )
