@@ -10,6 +10,32 @@ import sys
 from datetime import datetime
 from typing import Optional
 import traceback
+# FORCE TENSORFLOW 2.13 COMPATIBILITY
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Suppress warnings
+
+# Monkey patch for InputLayer compatibility
+import tensorflow as tf
+print(f"📦 TensorFlow Version: {tf.__version__}")
+print(f"📦 Expected: 2.13.0")
+
+# Fix for InputLayer deserialization issue in TF 2.15+
+if tf.__version__.startswith('2.1'):
+    import tensorflow.keras as keras
+    from tensorflow.keras.layers import InputLayer
+    
+    # Patch the from_config method
+    original_from_config = InputLayer.from_config
+    
+    def patched_from_config(config, custom_objects=None):
+        # Remove batch_shape if present (causes issue in TF 2.15+)
+        if 'batch_shape' in config:
+            print(f"⚠️ Removing batch_shape from config for compatibility")
+            config.pop('batch_shape', None)
+        return original_from_config(config, custom_objects)
+    
+    InputLayer.from_config = patched_from_config
+    print("✅ Applied TensorFlow compatibility patch")
 
 # Import our modules
 try:
