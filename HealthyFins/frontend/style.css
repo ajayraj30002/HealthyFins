@@ -740,3 +740,21 @@ footer {
     white-space: nowrap;
     max-width: 200px;
 }
+
+/* HealthyFins Notifications */
+.healthyfins-notification {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+/* Loading overlay */
+#healthyfins-loading {
+    backdrop-filter: blur(5px);
+}
+
+/* Spin animation */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
