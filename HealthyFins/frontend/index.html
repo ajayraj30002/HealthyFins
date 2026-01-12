@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FishCare Pro - Login</title>
+    <title>HealthyFins - Login</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -179,6 +179,12 @@
             background: linear-gradient(135deg, var(--secondary) 0%, #ff6b4a 100%);
         }
         
+        .btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        
         .form-toggle {
             text-align: center;
             margin-top: 30px;
@@ -233,16 +239,41 @@
         /* Form Switcher */
         .form-page {
             display: none;
+            animation: fadeIn 0.5s ease;
         }
         
         .form-page.active {
             display: block;
-            animation: fadeIn 0.5s ease;
         }
         
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Connection Status */
+        .connection-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .connection-connected {
+            background: #27ae60;
+            color: white;
+        }
+        
+        .connection-disconnected {
+            background: #e74c3c;
+            color: white;
         }
         
         /* Responsive */
@@ -264,17 +295,31 @@
             .brand-title {
                 font-size: 2.2rem;
             }
+            
+            .connection-status {
+                top: 10px;
+                right: 10px;
+                left: 10px;
+                justify-content: center;
+            }
         }
     </style>
 </head>
 <body>
+    <!-- Connection Status Indicator -->
+    <div id="connectionStatus" class="connection-status connection-disconnected" style="display: none;">
+        <i class="fas fa-wifi"></i>
+        <span>Connecting to HealthyFins...</span>
+    </div>
+    
+    <!-- Main Container -->
     <div class="container">
         <!-- Left Side - Branding -->
         <div class="brand-side">
             <div class="logo">
                 <i class="fas fa-fish"></i>
             </div>
-            <h1 class="brand-title">FishCare Pro</h1>
+            <h1 class="brand-title">HealthyFins</h1>
             <p class="brand-subtitle">AI-powered fish disease detection with real-time health monitoring for your aquaculture</p>
             
             <div class="features">
@@ -304,14 +349,14 @@
         <!-- Right Side - Forms -->
         <div class="form-side">
             <div class="form-container">
-                <!-- Success/Error Messages -->
-                <div class="alert" id="successAlert"></div>
-                <div class="alert" id="errorAlert"></div>
-                
                 <!-- Login Form -->
                 <div class="form-page active" id="loginPage">
                     <h2 class="form-title">Welcome Back</h2>
-                    <p class="form-subtitle">Sign in to your FishCare Pro account</p>
+                    <p class="form-subtitle">Sign in to your HealthyFins account</p>
+                    
+                    <!-- Success/Error Messages -->
+                    <div class="alert" id="successAlert"></div>
+                    <div class="alert" id="errorAlert"></div>
                     
                     <form id="loginForm">
                         <div class="form-group">
@@ -324,7 +369,7 @@
                             <input type="password" id="loginPassword" placeholder="Enter your password" required>
                         </div>
                         
-                        <button type="submit" class="btn">
+                        <button type="submit" class="btn" id="loginBtn">
                             <i class="fas fa-sign-in-alt"></i> Sign In
                         </button>
                     </form>
@@ -337,7 +382,11 @@
                 <!-- Signup Form -->
                 <div class="form-page" id="signupPage">
                     <h2 class="form-title">Create Account</h2>
-                    <p class="form-subtitle">Join FishCare Pro for free</p>
+                    <p class="form-subtitle">Join HealthyFins for free</p>
+                    
+                    <!-- Success/Error Messages -->
+                    <div class="alert" id="signupSuccessAlert"></div>
+                    <div class="alert" id="signupErrorAlert"></div>
                     
                     <form id="signupForm">
                         <div class="form-group">
@@ -353,6 +402,7 @@
                         <div class="form-group">
                             <label for="signupPassword"><i class="fas fa-lock"></i> Password</label>
                             <input type="password" id="signupPassword" placeholder="Create a password" required minlength="6">
+                            <small style="color: #666; display: block; margin-top: 5px;">Minimum 6 characters</small>
                         </div>
                         
                         <div class="form-group">
@@ -361,7 +411,7 @@
                             <small style="color: #666; display: block; margin-top: 5px;">For PH monitoring device integration</small>
                         </div>
                         
-                        <button type="submit" class="btn btn-secondary">
+                        <button type="submit" class="btn btn-secondary" id="signupBtn">
                             <i class="fas fa-user-plus"></i> Create Account
                         </button>
                     </form>
@@ -379,41 +429,76 @@
         </div>
     </div>
 
+    <!-- JavaScript -->
+    <script src="auth.js"></script>
     <script>
-        // Backend URL (Update after deployment)
-        const BACKEND_URL = "https://healthyfins.onrender.com"; // Your actual Render URL
-        
-        // Form switching
+        // Form switching functions
         function showSignup() {
             document.getElementById('loginPage').classList.remove('active');
             document.getElementById('signupPage').classList.add('active');
             clearAlerts();
+            updateConnectionStatus();
         }
         
         function showLogin() {
             document.getElementById('signupPage').classList.remove('active');
             document.getElementById('loginPage').classList.add('active');
             clearAlerts();
-        }
-        
-        function showAlert(type, message) {
-            const alertDiv = type === 'success' ? 
-                document.getElementById('successAlert') : 
-                document.getElementById('errorAlert');
-            
-            alertDiv.textContent = message;
-            alertDiv.className = `alert alert-${type}`;
-            alertDiv.style.display = 'block';
-            
-            // Auto-hide after 5 seconds
-            setTimeout(() => {
-                alertDiv.style.display = 'none';
-            }, 5000);
+            updateConnectionStatus();
         }
         
         function clearAlerts() {
-            document.getElementById('successAlert').style.display = 'none';
-            document.getElementById('errorAlert').style.display = 'none';
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(alert => {
+                alert.style.display = 'none';
+                alert.textContent = '';
+            });
+        }
+        
+        function showAlert(type, message, formType = 'login') {
+            const alertId = formType === 'login' ? 
+                (type === 'success' ? 'successAlert' : 'errorAlert') :
+                (type === 'success' ? 'signupSuccessAlert' : 'signupErrorAlert');
+            
+            const alertDiv = document.getElementById(alertId);
+            
+            if (alertDiv) {
+                alertDiv.textContent = message;
+                alertDiv.className = `alert alert-${type}`;
+                alertDiv.style.display = 'block';
+                
+                // Auto-hide after 5 seconds
+                setTimeout(() => {
+                    alertDiv.style.display = 'none';
+                }, 5000);
+            }
+        }
+        
+        // Update connection status
+        async function updateConnectionStatus() {
+            const statusDiv = document.getElementById('connectionStatus');
+            if (!statusDiv) return;
+            
+            try {
+                const response = await fetch('https://healthyfins.onrender.com/health', {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' }
+                });
+                
+                if (response.ok) {
+                    statusDiv.className = 'connection-status connection-connected';
+                    statusDiv.innerHTML = '<i class="fas fa-wifi"></i> <span>Connected to HealthyFins</span>';
+                    statusDiv.style.display = 'flex';
+                } else {
+                    statusDiv.className = 'connection-status connection-disconnected';
+                    statusDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> <span>Backend server unavailable</span>';
+                    statusDiv.style.display = 'flex';
+                }
+            } catch (error) {
+                statusDiv.className = 'connection-status connection-disconnected';
+                statusDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> <span>Cannot connect to server</span>`;
+                statusDiv.style.display = 'flex';
+            }
         }
         
         // Login handler
@@ -422,37 +507,40 @@
             
             const email = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPassword').value;
+            const loginBtn = document.getElementById('loginBtn');
+            
+            // Validate inputs
+            if (!email || !password) {
+                showAlert('error', 'Please fill in all fields', 'login');
+                return;
+            }
+            
+            // Disable button and show loading
+            const originalText = loginBtn.innerHTML;
+            loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in...';
+            loginBtn.disabled = true;
             
             try {
-                const formData = new FormData();
-                formData.append('email', email);
-                formData.append('password', password);
-                
-                const response = await fetch(`${BACKEND_URL}/login`, {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const data = await response.json();
+                // Use the HealthyFins API from auth.js
+                const data = await HealthyFins.loginUser(email, password);
                 
                 if (data.success) {
-                    // Save token and user info
-                    localStorage.setItem('token', data.access_token);
-                    localStorage.setItem('user', JSON.stringify(data.user));
-                    
-                    showAlert('success', `Welcome back, ${data.user.name}!`);
+                    showAlert('success', `Welcome back, ${data.user.name}!`, 'login');
                     
                     // Redirect to dashboard after 1 second
                     setTimeout(() => {
                         window.location.href = 'dashboard.html';
                     }, 1000);
                 } else {
-                    showAlert('error', data.detail || 'Login failed');
+                    showAlert('error', data.detail || 'Login failed', 'login');
                 }
-                
             } catch (error) {
-                showAlert('error', 'Network error. Please try again.');
                 console.error('Login error:', error);
+                showAlert('error', error.message || 'Network error. Please try again.', 'login');
+            } finally {
+                // Reset button
+                loginBtn.innerHTML = originalText;
+                loginBtn.disabled = false;
             }
         });
         
@@ -464,62 +552,103 @@
             const email = document.getElementById('signupEmail').value;
             const password = document.getElementById('signupPassword').value;
             const hardwareId = document.getElementById('hardwareId').value;
+            const signupBtn = document.getElementById('signupBtn');
+            
+            // Validate inputs
+            if (!name || !email || !password) {
+                showAlert('error', 'Please fill in all required fields', 'signup');
+                return;
+            }
+            
+            if (password.length < 6) {
+                showAlert('error', 'Password must be at least 6 characters', 'signup');
+                return;
+            }
+            
+            // Disable button and show loading
+            const originalText = signupBtn.innerHTML;
+            signupBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating account...';
+            signupBtn.disabled = true;
             
             try {
-                const formData = new FormData();
-                formData.append('name', name);
-                formData.append('email', email);
-                formData.append('password', password);
-                if (hardwareId) {
-                    formData.append('hardware_id', hardwareId);
-                }
-                
-                const response = await fetch(`${BACKEND_URL}/register`, {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const data = await response.json();
+                // Use the HealthyFins API from auth.js
+                const data = await HealthyFins.registerUser(name, email, password, hardwareId || null);
                 
                 if (data.success) {
-                    // Save token and user info
-                    localStorage.setItem('token', data.access_token);
-                    localStorage.setItem('user', JSON.stringify(data.user));
-                    
-                    showAlert('success', `Account created successfully! Welcome, ${name}!`);
+                    showAlert('success', `Account created successfully! Welcome to HealthyFins, ${name}!`, 'signup');
                     
                     // Redirect to dashboard after 1 second
                     setTimeout(() => {
                         window.location.href = 'dashboard.html';
                     }, 1000);
                 } else {
-                    showAlert('error', data.detail || 'Registration failed');
+                    showAlert('error', data.detail || 'Registration failed', 'signup');
                 }
-                
             } catch (error) {
-                showAlert('error', 'Network error. Please try again.');
                 console.error('Signup error:', error);
+                showAlert('error', error.message || 'Network error. Please try again.', 'signup');
+            } finally {
+                // Reset button
+                signupBtn.innerHTML = originalText;
+                signupBtn.disabled = false;
             }
         });
         
-        // Check if already logged in
-        window.addEventListener('load', function() {
-            const token = localStorage.getItem('token');
-            if (token) {
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if already logged in
+            const token = localStorage.getItem('healthyfins_token');
+            const user = localStorage.getItem('healthyfins_user');
+            
+            if (token && user) {
+                // Already logged in, redirect to dashboard
+                console.log('Already logged in, redirecting...');
                 window.location.href = 'dashboard.html';
+                return;
             }
             
             // Test backend connection
-            fetch(`${BACKEND_URL}/health`)
-                .then(response => {
-                    if (!response.ok) {
-                        console.warn('Backend not reachable. Using mock mode.');
-                    }
-                })
-                .catch(() => {
-                    console.warn('Backend connection failed. Will use mock data.');
-                });
+            updateConnectionStatus();
+            
+            // Auto-hide connection status after 10 seconds
+            setTimeout(() => {
+                const statusDiv = document.getElementById('connectionStatus');
+                if (statusDiv) {
+                    statusDiv.style.display = 'none';
+                }
+            }, 10000);
+            
+            // Check if HealthyFins API is available
+            if (typeof HealthyFins === 'undefined') {
+                console.error('HealthyFins API not loaded! Check auth.js');
+                showAlert('error', 'Application not loaded properly. Please refresh the page.', 'login');
+            } else {
+                console.log('HealthyFins API loaded:', HealthyFins);
+            }
+            
+            // Add demo credentials for testing (remove in production)
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                document.getElementById('loginEmail').value = 'demo@healthyfins.com';
+                document.getElementById('loginPassword').value = 'demo123';
+                console.log('Demo credentials loaded for local testing');
+            }
         });
+        
+        // Demo login for testing (remove in production)
+        function useDemoCredentials() {
+            document.getElementById('loginEmail').value = 'demo@healthyfins.com';
+            document.getElementById('loginPassword').value = 'demo123';
+            showAlert('success', 'Demo credentials loaded. Click Sign In to test.', 'login');
+        }
+        
+        // Add demo button for testing (uncomment if needed)
+        // document.addEventListener('DOMContentLoaded', function() {
+        //     const demoBtn = document.createElement('button');
+        //     demoBtn.textContent = 'Use Demo Credentials';
+        //     demoBtn.style.cssText = 'position:fixed;bottom:20px;left:20px;padding:10px;background:#3498db;color:white;border:none;border-radius:5px;cursor:pointer;z-index:1000;';
+        //     demoBtn.onclick = useDemoCredentials;
+        //     document.body.appendChild(demoBtn);
+        // });
     </script>
 </body>
 </html>
