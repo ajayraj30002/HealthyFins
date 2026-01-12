@@ -1,7 +1,6 @@
 // auth.js - Authentication helper functions
 
-// Backend URL - UPDATE THIS AFTER DEPLOYMENT
-const BACKEND_URL = "https://healthyfins.onrender.com"; // Change to your Render URL
+const BACKEND_URL = "https://healthyfins.onrender.com";
 
 // Check if user is authenticated
 function checkAuth() {
