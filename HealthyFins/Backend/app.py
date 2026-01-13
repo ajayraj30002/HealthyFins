@@ -18,19 +18,18 @@ from auth import create_access_token, get_current_user
 
 # Initialize app
 app = FastAPI(
-    title="HealthyFins",
+    title="HealthyFins API",
     description="AI Fish Disease Detection System",
     version="3.0.0"
 )
 
 # ========== CORS CONFIGURATION ==========
-# Your actual frontend URL
 origins = [
     "https://healthy-fins.vercel.app",  # Your Vercel frontend
     "http://localhost:3000",
     "http://localhost:5500",
     "http://127.0.0.1:5500",
-    "*"  # Keep for testing, can remove later
+    "*"  # Keep for testing
 ]
 
 app.add_middleware(
@@ -64,49 +63,110 @@ async def load_model():
     global model, class_names
     
     print("=" * 50)
-    print("🚀 STARTING MODEL LOADING PROCESS")
+    print("🚀 STARTING HEALTHYFINS BACKEND")
     print("=" * 50)
     
-    # Check current directory and files
-    print(f"📂 Current working directory: {os.getcwd()}")
-    print(f"📂 Directory contents:")
-    for item in os.listdir('.'):
-        print(f"  - {item}")
+    # Get current directory (where app.py is located)
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    print(f"📂 Current app.py directory: {current_dir}")
     
-    # Check models directory
-    models_dir = 'models'
-    if os.path.exists(models_dir):
-        print(f"\n📂 Models directory contents:")
-        for item in os.listdir(models_dir):
-            file_path = os.path.join(models_dir, item)
-            file_size = os.path.getsize(file_path) if os.path.isfile(file_path) else 0
-            print(f"  - {item} ({file_size / 1024:.1f} KB)")
-    else:
-        print(f"❌ Models directory not found! Creating...")
-        os.makedirs(models_dir, exist_ok=True)
+    # List files in current directory
+    print(f"📂 Files in Backend directory:")
+    try:
+        for item in os.listdir(current_dir):
+            item_path = os.path.join(current_dir, item)
+            if os.path.isfile(item_path):
+                size = os.path.getsize(item_path) / 1024
+                print(f"  📄 {item} ({size:.1f} KB)")
+            else:
+                print(f"  📁 {item}/")
+    except Exception as e:
+        print(f"  Error listing directory: {e}")
     
-    model_path = 'models/fish_disease_model_final.h5'
-    info_path = 'models/model_info_final.json'
+    # Check parent directory (where models folder should be)
+    parent_dir = os.path.dirname(current_dir)
+    print(f"\n📂 Parent directory (project root): {parent_dir}")
     
-    print(f"\n🔍 Model file path: {model_path}")
-    print(f"🔍 Info file path: {info_path}")
+    if os.path.exists(parent_dir):
+        print(f"📂 Files in project root:")
+        try:
+            for item in os.listdir(parent_dir):
+                item_path = os.path.join(parent_dir, item)
+                if os.path.isfile(item_path):
+                    print(f"  📄 {item}")
+                else:
+                    print(f"  📁 {item}/")
+        except Exception as e:
+            print(f"  Error listing parent directory: {e}")
     
-    # Check if files exist
-    if not os.path.exists(model_path):
-        print(f"❌ CRITICAL: Model file not found at {model_path}")
+    # Define possible model locations
+    possible_model_locations = [
+        # 1. Models inside Backend folder
+        os.path.join(current_dir, 'models', 'fish_disease_model_final.h5'),
+        
+        # 2. Models in parent directory (models/ folder at same level as Backend/)
+        os.path.join(parent_dir, 'models', 'fish_disease_model_final.h5'),
+        
+        # 3. Alternative path
+        os.path.join(current_dir, '..', 'models', 'fish_disease_model_final.h5'),
+        
+        # 4. Direct path
+        'models/fish_disease_model_final.h5',
+    ]
+    
+    possible_info_locations = [
+        os.path.join(current_dir, 'models', 'model_info_final.json'),
+        os.path.join(parent_dir, 'models', 'model_info_final.json'),
+        os.path.join(current_dir, '..', 'models', 'model_info_final.json'),
+        'models/model_info_final.json',
+    ]
+    
+    # Find which path exists
+    model_path = None
+    info_path = None
+    
+    print(f"\n🔍 Searching for model file...")
+    for path in possible_model_locations:
+        if os.path.exists(path):
+            model_path = path
+            file_size = os.path.getsize(path) / (1024 * 1024)  # Convert to MB
+            print(f"✅ FOUND model at: {path}")
+            print(f"   Size: {file_size:.2f} MB")
+            break
+        else:
+            print(f"   ❌ Not found: {path}")
+    
+    print(f"\n🔍 Searching for model info file...")
+    for path in possible_info_locations:
+        if os.path.exists(path):
+            info_path = path
+            print(f"✅ FOUND info at: {path}")
+            break
+        else:
+            print(f"   ❌ Not found: {path}")
+    
+    if not model_path:
+        print(f"\n❌ CRITICAL: Model file NOT FOUND!")
         print("📋 Using mock mode with actual classes")
         model = None
         class_names = ACTUAL_CLASSES
         return
     
-    if not os.path.exists(info_path):
-        print(f"⚠️ Info file not found, using default classes")
+    if not info_path:
+        print(f"\n⚠️ Model info file not found, using default classes")
         class_names = ACTUAL_CLASSES
     else:
-        print(f"✅ Info file found")
+        try:
+            with open(info_path, 'r') as f:
+                data = json.load(f)
+                class_names = data.get('class_names', ACTUAL_CLASSES)
+                print(f"📊 Loaded {len(class_names)} classes from JSON")
+        except Exception as e:
+            print(f"❌ Error reading info file: {e}")
+            class_names = ACTUAL_CLASSES
     
     try:
-        print("\n📦 Loading TensorFlow model...")
+        print(f"\n📦 Loading TensorFlow model...")
         
         # Disable TensorFlow warnings for cleaner logs
         os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -120,21 +180,10 @@ async def load_model():
         
         print("✅ TensorFlow model loaded successfully!")
         
-        # Load class names from JSON
-        if os.path.exists(info_path):
-            with open(info_path, 'r') as f:
-                data = json.load(f)
-                class_names = data.get('class_names', ACTUAL_CLASSES)
-                print(f"📊 Loaded {len(class_names)} classes from JSON")
-        else:
-            class_names = ACTUAL_CLASSES
-            print(f"📊 Using predefined {len(class_names)} classes")
-        
-        print(f"\n🎯 Model Summary:")
-        print(f"  • Input shape: {model.input_shape}")
-        print(f"  • Output shape: {model.output_shape}")
-        print(f"  • Number of classes: {len(class_names)}")
-        print(f"  • Classes: {class_names}")
+        # Test the model with a random input
+        test_input = np.random.rand(1, 224, 224, 3).astype('float32')
+        test_prediction = model.predict(test_input, verbose=0)
+        print(f"🧪 Model test prediction shape: {test_prediction.shape}")
         
     except Exception as e:
         print(f"\n❌ ERROR loading model: {str(e)}")
@@ -145,24 +194,27 @@ async def load_model():
         model = None
         class_names = ACTUAL_CLASSES
     
-    print("\n" + "=" * 50)
-    print("✅ MODEL LOADING COMPLETE")
-    print(f"   Status: {'REAL MODEL' if model is not None else 'MOCK MODE'}")
-    print(f"   Classes: {len(class_names)}")
+    print(f"\n🎯 Model Status: {'REAL MODEL' if model is not None else 'MOCK MODE'}")
+    print(f"🎯 Classes loaded: {len(class_names)}")
+    if model is not None:
+        print(f"🎯 Model input shape: {model.input_shape}")
+        print(f"🎯 Model output shape: {model.output_shape}")
     print("=" * 50)
 
 # ========== HEALTH CHECK ==========
 @app.get("/")
 async def root():
     return {
-        "message": "🐟 FishCare Pro API",
+        "message": "🐟 HealthyFins API",
         "status": "active",
         "version": "3.0.0",
         "frontend": "https://healthy-fins.vercel.app",
         "model_loaded": model is not None,
+        "model_type": "real" if model is not None else "mock",
         "num_classes": len(class_names),
+        "timestamp": datetime.now().isoformat(),
         "endpoints": {
-            "public": ["/health", "/register", "/login"],
+            "public": ["/", "/health", "/register", "/login"],
             "protected": ["/predict", "/profile", "/history", "/ph-monitoring"]
         }
     }
@@ -175,12 +227,13 @@ async def health_check():
     
     return {
         "status": "healthy",
+        "service": "HealthyFins Backend",
         "timestamp": datetime.now().isoformat(),
         "model": {
             "loaded": model is not None,
             "type": "real" if model is not None else "mock",
-            "classes": class_names,
-            "num_classes": len(class_names)
+            "classes_count": len(class_names),
+            "classes": class_names if len(class_names) <= 10 else f"{len(class_names)} classes"
         },
         "database": {
             "users": users_count,
@@ -188,9 +241,14 @@ async def health_check():
             "file": "database.json"
         },
         "system": {
-            "python_version": sys.version,
+            "python_version": sys.version.split()[0],
             "tensorflow_version": tf.__version__,
-            "backend_url": "https://healthyfins.onrender.com"  # Your Render URL
+            "environment": os.environ.get("RENDER", "development")
+        },
+        "links": {
+            "frontend": "https://healthy-fins.vercel.app",
+            "github": "https://github.com/yourusername/HealthyFins",
+            "documentation": "https://healthyfins.onrender.com/docs"
         }
     }
 
@@ -209,7 +267,6 @@ async def register_user(
         success, result = db.create_user(email, password, name, hardware_id)
         
         if not success:
-            print(f"❌ Registration failed: {result}")
             raise HTTPException(status_code=400, detail=result)
         
         # Create access token
@@ -243,7 +300,6 @@ async def login_user(
         success, result = db.authenticate_user(email, password)
         
         if not success:
-            print(f"❌ Login failed: {result}")
             raise HTTPException(status_code=401, detail=result)
         
         # Create access token
@@ -489,7 +545,7 @@ async def get_ph_data(current_user: dict = Depends(get_current_user)):
             "success": True,
             "data": mock_data,
             "message": "Connect your Arduino/Raspberry Pi for real-time data",
-            "integration_guide": "https://github.com/yourusername/fishcare-hardware"
+            "integration_guide": "https://github.com/yourusername/HealthyFins"
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"PH monitoring error: {str(e)}")
@@ -509,6 +565,7 @@ async def http_exception_handler(request, exc):
 @app.exception_handler(Exception)
 async def general_exception_handler(request, exc):
     print(f"❌ Unhandled exception: {str(exc)}")
+    traceback.print_exc()
     return JSONResponse(
         status_code=500,
         content={
@@ -520,10 +577,11 @@ async def general_exception_handler(request, exc):
 
 # ========== STARTUP MESSAGE ==========
 print("\n" + "=" * 60)
-print("🐟 FISHCARE PRO API - STARTING UP")
+print("🐟 HEALTHYFINS API - READY")
 print("=" * 60)
-print(f"Frontend URL: https://healthy-fins.vercel.app")
-print(f"Backend URL: https://healthyfins.onrender.com")
+print(f"📡 Backend URL: https://healthyfins.onrender.com")
+print(f"🌐 Frontend URL: https://healthy-fins.vercel.app")
+print(f"📊 Model Status: {'Will attempt to load'}")
 print("=" * 60)
 
 if __name__ == "__main__":
