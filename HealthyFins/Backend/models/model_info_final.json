@@ -1,0 +1,24 @@
+{
+  "class_names": [
+    "Bacterial Red disease",
+    "Parasitic diseases",
+    "Viral diseases White tail disease",
+    "Fungal diseases Saprolegniasis",
+    "Bacterial diseases - Aeromoniasis",
+    "Bacterial gill disease",
+    "Healthy Fish",
+    "EUS_Ulcerative_Syndrome (arg)"
+  ],
+  "reverse_label_map": {
+    "0": "Bacterial Red disease",
+    "1": "Bacterial diseases - Aeromoniasis",
+    "2": "Bacterial gill disease",
+    "3": "EUS_Ulcerative_Syndrome (arg)",
+    "4": "Fungal diseases Saprolegniasis",
+    "5": "Healthy Fish",
+    "6": "Parasitic diseases",
+    "7": "Viral diseases White tail disease"
+  },
+  "test_accuracy": 0.8363636136054993,
+  "image_size": 224
+}
