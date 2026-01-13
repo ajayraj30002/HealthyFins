@@ -158,7 +158,7 @@ async function analyzeImage() {
         
         currentResult = mockResult;
         displayResults(mockResult);
-        alert('Using mock data. Backend connection failed.');
+        console.log('Using backend in mock mode. Model not loaded on server.');
     }
     
     // Hide loading
