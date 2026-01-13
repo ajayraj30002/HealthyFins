@@ -1,0 +1,24 @@
+{
+  "class_names": [
+    "Bacterial Red disease",
+    "Parasitic diseases",
+    "Viral diseases White tail disease",
+    "Fungal diseases Saprolegniasis",
+    "Bacterial diseases - Aeromoniasis",
+    "Bacterial gill disease",
+    "Healthy Fish",
+    "EUS_Ulcerative_Syndrome (arg)"
+  ],
+  "model_architecture": "MobileNetV2 + GlobalAvgPool + Dense128",
+  "input_shape": [
+    224,
+    224,
+    3
+  ],
+  "output_shape": [
+    8
+  ],
+  "training_accuracy": 0.125,
+  "version": "4.0.0",
+  "compatible_with": "TensorFlow 2.15.0"
+}
