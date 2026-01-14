@@ -1,11 +1,8 @@
-// script.js - Dashboard functionality - FIXED VERSION
+// script.js - COMPLETE FIXED VERSION
 
 // Global variables
 let currentFile = null;
 let currentResult = null;
-
-// Backend URL from auth.js (must match)
-const BACKEND_URL = "https://healthyfins.onrender.com";
 
 // Initialize dashboard
 document.addEventListener('DOMContentLoaded', function() {
@@ -44,17 +41,13 @@ async function testBackendConnection() {
         
         if (response.ok) {
             const data = await response.json();
-            console.log('✅ Backend connected:', {
-                status: data.status,
-                model: data.model,
-                url: BACKEND_URL
-            });
+            console.log('✅ Backend connected:', data);
             
             // Show model status
             if (data.model && data.model.loaded) {
                 showNotification('✅ AI Model loaded and ready!', 'success');
             } else {
-                showNotification('⚠️ AI Model not loaded. Using intelligent analysis.', 'warning');
+                showNotification('⚠️ Using intelligent analysis mode', 'warning');
             }
         } else {
             console.error('❌ Backend health check failed:', response.status);
@@ -66,24 +59,7 @@ async function testBackendConnection() {
     }
 }
 
-// Load all dashboard data
-async function loadDashboardData() {
-    console.log('📊 Loading dashboard data...');
-    
-    try {
-        await Promise.all([
-            loadDashboardStats(),
-            loadRecentHistory(),
-            loadPHData()
-        ]);
-        console.log('✅ Dashboard data loaded');
-    } catch (error) {
-        console.error('❌ Error loading dashboard data:', error);
-        showNotification('⚠️ Could not load all dashboard data', 'error');
-    }
-}
-
-// Setup file upload functionality
+// Setup file upload functionality - FIXED VERSION
 function setupFileUpload() {
     const fileInput = document.getElementById('fileInput');
     const uploadArea = document.getElementById('uploadArea');
@@ -101,7 +77,10 @@ function setupFileUpload() {
         fileInput.click();
     });
     
-    // Drag and drop
+    // File selection handler
+    fileInput.addEventListener('change', handleFileSelect);
+    
+    // Drag and drop handlers
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
         uploadArea.addEventListener(eventName, preventDefaults, false);
     });
@@ -115,7 +94,6 @@ function setupFileUpload() {
     });
     
     uploadArea.addEventListener('drop', handleDrop, false);
-    fileInput.addEventListener('change', handleFileSelect, false);
 }
 
 function preventDefaults(e) {
@@ -124,15 +102,21 @@ function preventDefaults(e) {
 }
 
 function highlightArea() {
-    document.getElementById('uploadArea').style.borderColor = '#1a5f6b';
-    document.getElementById('uploadArea').style.background = '#e1f5fe';
-    document.getElementById('uploadArea').style.transform = 'scale(1.02)';
+    const uploadArea = document.getElementById('uploadArea');
+    if (uploadArea) {
+        uploadArea.style.borderColor = '#1a5f6b';
+        uploadArea.style.background = '#e1f5fe';
+        uploadArea.style.transform = 'scale(1.02)';
+    }
 }
 
 function unhighlightArea() {
-    document.getElementById('uploadArea').style.borderColor = '#2c8c99';
-    document.getElementById('uploadArea').style.background = '#e9f7fe';
-    document.getElementById('uploadArea').style.transform = 'scale(1)';
+    const uploadArea = document.getElementById('uploadArea');
+    if (uploadArea) {
+        uploadArea.style.borderColor = '#2c8c99';
+        uploadArea.style.background = '#e9f7fe';
+        uploadArea.style.transform = 'scale(1)';
+    }
 }
 
 function handleDrop(e) {
@@ -210,11 +194,14 @@ async function analyzeImage() {
         
         console.log('📤 Sending to backend:', BACKEND_URL + '/predict');
         
-        // Get token
-        const token = localStorage.getItem('healthyfins_token');
+        // Get token from auth.js
+        const token = localStorage.getItem('healthyfins_token') || localStorage.getItem('token');
         if (!token) {
-            throw new Error('No authentication token found');
+            throw new Error('No authentication token found. Please login again.');
         }
+        
+        // Show loading message
+        showNotification('Analyzing image...', 'info');
         
         const response = await fetch(`${BACKEND_URL}/predict`, {
             method: 'POST',
@@ -222,8 +209,7 @@ async function analyzeImage() {
                 'Authorization': `Bearer ${token}`
                 // Note: Don't set Content-Type for FormData
             },
-            body: formData,
-            timeout: 60000 // 60 second timeout
+            body: formData
         });
         
         console.log('📥 Response status:', response.status, response.statusText);
@@ -237,14 +223,21 @@ async function analyzeImage() {
             return;
         }
         
-        if (response.status === 413) {
-            throw new Error('Image too large. Please use a smaller image.');
-        }
-        
         if (!response.ok) {
             const errorText = await response.text();
             console.error('❌ Server error response:', errorText);
-            throw new Error(`Server error (${response.status}): ${errorText.substring(0, 100)}`);
+            
+            // Try to parse JSON error
+            let errorMessage = `Server error (${response.status})`;
+            try {
+                const errorData = JSON.parse(errorText);
+                errorMessage = errorData.detail || errorData.message || errorMessage;
+            } catch (e) {
+                // Not JSON, use raw text
+                errorMessage = errorText || errorMessage;
+            }
+            
+            throw new Error(errorMessage);
         }
         
         const result = await response.json();
@@ -255,6 +248,7 @@ async function analyzeImage() {
             displayResults(result);
             // Automatically save to history
             saveResult();
+            showNotification('Analysis complete!', 'success');
         } else {
             throw new Error(result.detail || 'Prediction failed');
         }
@@ -263,7 +257,8 @@ async function analyzeImage() {
         console.error('❌ Analysis error:', error);
         
         // Show user-friendly error
-        showNotification(`Analysis failed: ${error.message}`, 'error');
+        const errorMsg = error.message || 'Analysis failed. Please try again.';
+        showNotification(`❌ ${errorMsg}`, 'error');
         
         // Fallback to intelligent analysis
         console.log('🔄 Using intelligent analysis fallback...');
@@ -272,6 +267,7 @@ async function analyzeImage() {
             currentResult = mockResult;
             displayResults(mockResult);
             console.log('✅ Intelligent analysis completed');
+            showNotification('Using intelligent analysis (AI model unavailable)', 'warning');
         } catch (fallbackError) {
             console.error('❌ Fallback analysis failed:', fallbackError);
             showNotification('Could not analyze image. Please try another image.', 'error');
@@ -281,7 +277,7 @@ async function analyzeImage() {
             document.getElementById('previewSection').style.display = 'block';
         }
     } finally {
-        // Hide loading after a minimum time to prevent flicker
+        // Hide loading
         setTimeout(() => {
             document.getElementById('loadingSection').style.display = 'none';
         }, 500);
@@ -405,11 +401,13 @@ function displayResults(result) {
     
     // Update badge
     const badge = document.getElementById('diseaseBadge');
-    badge.textContent = disease.includes('Healthy') ? 'Healthy' : 'Disease';
-    badge.className = 'badge ' + (
-        disease.includes('Healthy') ? 'badge-success' : 
-        confidence > 70 ? 'badge-danger' : 'badge-warning'
-    );
+    if (badge) {
+        badge.textContent = disease.includes('Healthy') ? 'Healthy' : 'Disease';
+        badge.className = 'badge ' + (
+            disease.includes('Healthy') ? 'badge-success' : 
+            confidence > 70 ? 'badge-danger' : 'badge-warning'
+        );
+    }
     
     // Update treatment text
     updateTreatmentText(disease, confidence, result.model_type);
@@ -419,8 +417,8 @@ function displayResults(result) {
     modelIndicator.style.display = 'block';
     modelIndicator.style.marginTop = '10px';
     modelIndicator.style.fontSize = '0.8em';
-    modelIndicator.style.color = result.model_type === 'real_trained' ? '#27ae60' : '#f39c12';
-    modelIndicator.textContent = `Analysis: ${result.model_type === 'real_trained' ? 'AI Model' : 'Intelligent Analysis'}`;
+    modelIndicator.style.color = result.model_type === 'ai_model' ? '#27ae60' : '#f39c12';
+    modelIndicator.textContent = `Analysis: ${result.model_type === 'ai_model' ? 'AI Model' : 'Intelligent Analysis'}`;
     
     // Add to results
     const resultContent = document.querySelector('.result-content');
@@ -445,50 +443,49 @@ function displayResults(result) {
 }
 
 // Update treatment recommendation
-function updateTreatmentText(disease, confidence, modelType = 'real_trained') {
+function updateTreatmentText(disease, confidence, modelType = 'ai_model') {
     const treatments = {
         'healthy': '✅ Your fish appears healthy! Continue regular maintenance:\n• Weekly water changes (20-25%)\n• Quality fish food\n• Regular observation for behavior changes\n• Maintain water temperature: 24-28°C\n• PH level: 6.5-8.0',
         
         'white spot': '🚨 White Spot Disease detected! Immediate action required:\n1. Raise water temperature to 30°C gradually (1°C per hour)\n2. Add aquarium salt (1 tablespoon per 20 liters)\n3. Use anti-parasitic medication for 10-14 days\n4. Increase aeration during treatment\n5. Isolate affected fish if possible',
         
-        'fin rot': '⚠️ Fin Rot detected! Treatment steps:\n1. Improve water quality immediately (test parameters)\n2. Use antibacterial medication specifically for fin rot\n3. Remove any sharp decorations\n4. Add aquarium salt (1 teaspoon per 4 liters)\n5. Consider isolation if condition worsens\n6. Maintain pristine water conditions',
+        'bacterial': '⚠️ Bacterial Infection detected! Treatment:\n1. Antibacterial medication\n2. Improve water quality\n3. Add aquarium salt\n4. Increase water changes\n5. Monitor closely\n6. Consult veterinarian if severe',
         
-        'fungal': '⚠️ Fungal Infection detected! Treatment:\n1. Use antifungal medication (methylene blue or similar)\n2. Improve water quality and filtration\n3. Consider salt bath treatment\n4. Remove affected fish if infection is severe\n5. Increase water temperature slightly\n6. Reduce organic waste in tank',
+        'fungal': '⚠️ Fungal Infection detected! Treatment:\n1. Use antifungal medication\n2. Improve water quality and filtration\n3. Salt bath treatment\n4. Remove affected fish if severe\n5. Increase temperature slightly',
         
-        'parasite': '🚨 Parasitic Infection detected! Emergency treatment:\n1. Use anti-parasitic medication immediately\n2. Quarantine affected fish if possible\n3. Clean and disinfect tank thoroughly\n4. Treat all fish in the tank\n5. Improve water quality parameters\n6. Repeat treatment after 7 days',
-        
-        'bacterial': '⚠️ Bacterial Infection detected! Treatment:\n1. Antibacterial medication (as per vet guidance)\n2. Improve water quality (test ammonia, nitrites)\n3. Add aquarium salt\n4. Increase water changes\n5. Monitor closely for improvement\n6. Consult veterinarian if no improvement',
-        
-        'aeromoniasis': '🚨 Aeromoniasis detected! Serious bacterial infection:\n1. Immediate antibiotic treatment\n2. Isolate affected fish\n3. Disinfect entire tank\n4. Test and correct water parameters\n5. Consult aquatic veterinarian\n6. May require prescription antibiotics',
-        
-        'gill disease': '⚠️ Bacterial Gill Disease detected:\n1. Improve water quality immediately\n2. Antibiotic treatment in food\n3. Increase aeration\n4. Salt bath treatment\n5. Reduce stocking density\n6. Professional veterinary consultation'
+        'parasitic': '🚨 Parasitic Infection detected! Emergency treatment:\n1. Anti-parasitic medication immediately\n2. Quarantine affected fish\n3. Clean and disinfect tank\n4. Treat all fish in tank\n5. Improve water quality'
     };
     
     let treatment = treatments['healthy'];
-    disease = disease.toLowerCase();
+    const diseaseLower = disease.toLowerCase();
     
-    if (disease.includes('white spot') || disease.includes('white tail')) treatment = treatments['white spot'];
-    else if (disease.includes('fin rot')) treatment = treatments['fin rot'];
-    else if (disease.includes('fungal') || disease.includes('saprolegniasis')) treatment = treatments['fungal'];
-    else if (disease.includes('parasit')) treatment = treatments['parasite'];
-    else if (disease.includes('aeromoniasis')) treatment = treatments['aeromoniasis'];
-    else if (disease.includes('gill')) treatment = treatments['gill disease'];
-    else if (disease.includes('bacterial')) treatment = treatments['bacterial'];
-    else if (disease.includes('red')) treatment = treatments['bacterial'];
+    if (diseaseLower.includes('white spot') || diseaseLower.includes('white tail')) {
+        treatment = treatments['white spot'];
+    } else if (diseaseLower.includes('fungal') || diseaseLower.includes('saprolegniasis')) {
+        treatment = treatments['fungal'];
+    } else if (diseaseLower.includes('parasit')) {
+        treatment = treatments['parasitic'];
+    } else if (diseaseLower.includes('bacterial') || diseaseLower.includes('red') || 
+               diseaseLower.includes('aeromoniasis') || diseaseLower.includes('gill')) {
+        treatment = treatments['bacterial'];
+    }
     
     // Add confidence warning if low
     if (confidence < 70) {
         treatment = '⚠️ Low confidence prediction. ' + treatment + 
-                   '\n\n🔍 Recommendation: Take clearer photos from multiple angles or consult a veterinarian for confirmation.';
+                   '\n\n🔍 Recommendation: Take clearer photos from multiple angles or consult a veterinarian.';
     }
     
     // Add model type note
-    if (modelType !== 'real_trained') {
-        treatment = 'ℹ️ Using intelligent analysis. ' + treatment +
-                   '\n\n📱 For more accurate results, ensure backend AI model is loaded.';
+    if (modelType !== 'ai_model') {
+        treatment = 'ℹ️ Using intelligent analysis (color-based). ' + treatment +
+                   '\n\n📱 For more accurate results, ensure AI model is loaded on server.';
     }
     
-    document.getElementById('treatmentText').textContent = treatment;
+    const treatmentElement = document.getElementById('treatmentText');
+    if (treatmentElement) {
+        treatmentElement.textContent = treatment;
+    }
 }
 
 // Save result to history
@@ -538,7 +535,7 @@ async function loadDashboardStats() {
     try {
         console.log('📈 Loading dashboard stats...');
         
-        const token = localStorage.getItem('healthyfins_token');
+        const token = localStorage.getItem('healthyfins_token') || localStorage.getItem('token');
         if (!token) {
             console.log('❌ No token for stats');
             updateDashboardStats([]);
@@ -601,7 +598,7 @@ async function loadRecentHistory() {
     try {
         console.log('📜 Loading recent history...');
         
-        const token = localStorage.getItem('healthyfins_token');
+        const token = localStorage.getItem('healthyfins_token') || localStorage.getItem('token');
         if (!token) {
             displayRecentHistory([]);
             return;
@@ -675,7 +672,7 @@ async function loadPHData(forceRefresh = false) {
     try {
         console.log('🌡️ Loading PH data...');
         
-        const token = localStorage.getItem('healthyfins_token');
+        const token = localStorage.getItem('healthyfins_token') || localStorage.getItem('token');
         if (!token) {
             displayMockPHData();
             return;
@@ -810,20 +807,6 @@ function setupEventListeners() {
             clearImage();
         }
     });
-    
-    // Add retry button if results fail
-    const retryBtn = document.createElement('button');
-    retryBtn.id = 'retryAnalysisBtn';
-    retryBtn.className = 'btn btn-outline';
-    retryBtn.style.display = 'none';
-    retryBtn.style.marginTop = '10px';
-    retryBtn.innerHTML = '<i class="fas fa-redo"></i> Retry Analysis';
-    retryBtn.onclick = analyzeImage;
-    
-    const resultsSection = document.getElementById('resultsSection');
-    if (resultsSection) {
-        resultsSection.appendChild(retryBtn);
-    }
 }
 
 // Show notification
@@ -869,7 +852,7 @@ function showNotification(message, type = 'info') {
     }, duration);
 }
 
-// Add CSS for notifications if not already in style.css
+// Add CSS for notifications
 function addNotificationStyles() {
     if (!document.getElementById('notification-styles')) {
         const style = document.createElement('style');
@@ -959,3 +942,26 @@ window.clearImage = clearImage;
 window.newAnalysis = newAnalysis;
 window.refreshPHData = refreshPHData;
 window.connectHardware = connectHardware;
+
+// Make sure auth.js functions are available
+function checkAuth() {
+    return window.HealthyFins ? window.HealthyFins.checkAuth() : false;
+}
+
+function logout() {
+    if (window.HealthyFins && window.HealthyFins.logout) {
+        window.HealthyFins.logout();
+    } else {
+        localStorage.clear();
+        window.location.href = 'index.html';
+    }
+}
+
+// If HealthyFins is not loaded yet, wait for it
+if (typeof HealthyFins === 'undefined') {
+    console.log('⚠️ HealthyFins not loaded yet, waiting...');
+    document.addEventListener('HealthyFinsLoaded', function() {
+        console.log('✅ HealthyFins loaded');
+        loadDashboardData();
+    });
+}
