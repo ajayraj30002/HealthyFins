@@ -68,7 +68,8 @@ async def load_model():
         # Try alternative paths
         possible_paths = [
             'fish_disease_model_final.h5',
-            './fish_disease_model_final.h5'
+            './fish_disease_model_final.h5',
+            '/opt/render/project/src/models/fish_disease_model_final.h5'
         ]
         for path in possible_paths:
             if os.path.exists(path):
@@ -89,7 +90,7 @@ async def load_model():
                 class_names = data.get('class_names', [])
                 reverse_label_map = data.get('reverse_label_map', {})
                 print(f"📊 Classes from JSON: {len(class_names)}")
-                print(f"📊 Reverse map: {reverse_label_map}")
+                print(f"📊 Reverse map loaded successfully")
         except Exception as e:
             print(f"⚠️ Error loading class info: {e}")
             class_names = []
@@ -131,22 +132,14 @@ async def load_model():
     
     print(f"📊 Total classes: {len(class_names)}")
     print(f"📊 TensorFlow version: {tf.__version__}")
-    print(f"📊 Keras version: {tf.keras.__version__}")
     
     try:
         print("\n🔄 Loading model with EXACT Colab preprocessing...")
         
-        # IMPORTANT: Disable experimental features for compatibility
-        tf.compat.v1.disable_eager_execution()
-        
         # Load the EXACT model from your Colab training
-        # Use custom_objects to handle any custom layers
         model = tf.keras.models.load_model(
             model_path,
-            compile=False,
-            custom_objects={
-                'MobileNetV2': tf.keras.applications.MobileNetV2
-            }
+            compile=False
         )
         
         print("✅ Model loaded successfully!")
