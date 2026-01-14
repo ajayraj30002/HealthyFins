@@ -1,4 +1,4 @@
-// script.js - COMPLETE FIXED VERSION
+// script.js - COMPLETE FIXED VERSIOn
 
 // Global variables
 let currentFile = null;
