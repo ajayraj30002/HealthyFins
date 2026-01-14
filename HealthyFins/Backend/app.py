@@ -1,4 +1,4 @@
-# app.py - COMPLETE Flask app for Render/Vercel deployment
+# app.py - COMPLETE Flask app for Render/Vercel deployments
 import tensorflow as tf
 import numpy as np
 from PIL import Image
