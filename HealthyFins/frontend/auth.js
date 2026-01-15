@@ -1,15 +1,19 @@
-// auth.js - COMPLETE PRODUCTION READY VERSION
+// auth.js - HealthyFins Production Version - COMPLETE FIXED
 
 // ========== CONFIGURATION ==========
+
+// Backend URL - Your Render backend URL
 const BACKEND_URL = "https://healthyfins.onrender.com";
+
+// Frontend URL - Your Vercel frontend
 const FRONTEND_URL = "https://healthy-fins.vercel.app";
 
-// Default demo user (for offline/testing)
+// Default demo user (for testing when backend is down)
 const DEMO_USER = {
     id: "demo123",
     email: "demo@healthyfins.com",
     name: "Demo User",
-    hardware_id: "HF-FDDS-001",
+    hardware_id: "DEMO-001",
     created_at: new Date().toISOString()
 };
 
@@ -19,7 +23,7 @@ const DEMO_USER = {
 function checkAuth() {
     console.log('🔐 Checking authentication...');
     
-    // Check for token with both keys for compatibility
+    // Check for token with BOTH keys (for compatibility)
     const token1 = localStorage.getItem('healthyfins_token');
     const token2 = localStorage.getItem('token');
     const token = token1 || token2;
@@ -47,6 +51,7 @@ function checkAuth() {
         return true;
     } catch (error) {
         console.error('❌ Error parsing token:', error);
+        // If we can't parse the token, assume invalid
         return false;
     }
 }
@@ -55,7 +60,7 @@ function checkAuth() {
 function getAuthHeaders(contentType = 'application/json') {
     console.log('🔧 Getting auth headers...');
     
-    // Get token with both keys for compatibility
+    // Get token with BOTH keys (for compatibility)
     const token1 = localStorage.getItem('healthyfins_token');
     const token2 = localStorage.getItem('token');
     const token = token1 || token2;
@@ -73,7 +78,7 @@ function getAuthHeaders(contentType = 'application/json') {
         'Accept': 'application/json'
     };
     
-    // Only add Content-Type if not FormData
+    // Only add Content-Type if not FormData (FormData sets its own)
     if (contentType && contentType !== 'multipart/form-data') {
         headers['Content-Type'] = contentType;
     }
@@ -197,6 +202,7 @@ async function testBackendConnection() {
             headers: {
                 'Accept': 'application/json'
             },
+            // Add timeout using AbortController
             signal: AbortSignal.timeout(10000) // 10 second timeout
         });
         
@@ -207,6 +213,8 @@ async function testBackendConnection() {
             console.log("✅ Backend connected:", {
                 status: data.status,
                 responseTime: `${responseTime}ms`,
+                model: data.model?.loaded ? 'Loaded' : 'Not loaded',
+                classes: data.model?.classes_count || 0,
                 url: BACKEND_URL
             });
             
@@ -260,7 +268,7 @@ async function apiRequest(endpoint, options = {}) {
     const timeoutId = setTimeout(() => controller.abort(), timeout);
     
     try {
-        // Add authorization header if token exists
+        // Add authorization header if token exists (for protected endpoints)
         const token = localStorage.getItem('healthyfins_token') || localStorage.getItem('token');
         const headers = {
             'Accept': 'application/json',
@@ -272,7 +280,7 @@ async function apiRequest(endpoint, options = {}) {
             headers['Authorization'] = `Bearer ${token}`;
         }
         
-        // Log request details
+        // Log request details (without sensitive data)
         console.log(`🔗 Making request to: ${BACKEND_URL}${endpoint}`);
         
         const response = await fetch(`${BACKEND_URL}${endpoint}`, {
@@ -328,6 +336,7 @@ async function loginUser(email, password) {
         const data = await apiRequest('/login', {
             method: 'POST',
             body: formData
+            // Note: Don't set Content-Type header for FormData
         });
         
         if (data.success) {
@@ -667,7 +676,7 @@ function updateConnectionStatus(isConnected, data) {
             <i class="fas fa-wifi"></i>
             <span>Connected to HealthyFins</span>
             <small style="margin-left: 10px; opacity: 0.8;">
-                ${data?.model?.loaded ? 'Model: ✅ Loaded' : 'Model: ❌ Not loaded'}
+                Model: ${data?.model?.loaded ? '✅ Loaded' : '❌ Not loaded'}
             </small>
         `;
         connectionStatus.style.display = 'flex';
@@ -694,8 +703,6 @@ function updateConnectionStatus(isConnected, data) {
 function initializePage() {
     console.log('🚀 Initializing HealthyFins page...');
     console.log('📁 Current page:', window.location.pathname);
-    console.log('🌐 Frontend URL:', FRONTEND_URL);
-    console.log('🔗 Backend URL:', BACKEND_URL);
     
     // Test backend connection (non-blocking)
     setTimeout(() => {
@@ -827,27 +834,27 @@ if (document.readyState === 'loading') {
 // Create global HealthyFins object
 window.HealthyFins = {
     // Auth functions
-    checkAuth: checkAuth,
-    loginUser: loginUser,
-    registerUser: registerUser,
-    logout: logout,
+    checkAuth,
+    loginUser,
+    registerUser,
+    logout,
     
     // UI functions
-    showNotification: showNotification,
-    showLoading: showLoading,
-    hideLoading: hideLoading,
+    showNotification,
+    showLoading,
+    hideLoading,
     
     // Network functions
-    apiRequest: apiRequest,
-    testBackendConnection: testBackendConnection,
-    getAuthHeaders: getAuthHeaders,
+    apiRequest,
+    testBackendConnection,
+    getAuthHeaders,
     
     // Data functions
-    loadUserData: loadUserData,
+    loadUserData,
     
     // Configuration
-    BACKEND_URL: BACKEND_URL,
-    FRONTEND_URL: FRONTEND_URL,
+    BACKEND_URL,
+    FRONTEND_URL,
     
     // Demo functions (for testing)
     loginDemoUser: function(email, password) {
@@ -859,8 +866,8 @@ window.HealthyFins = {
 };
 
 console.log('✅ HealthyFins API v4.0.0 loaded successfully');
-console.log('🌐 Frontend URL:', FRONTEND_URL);
-console.log('🔗 Backend URL:', BACKEND_URL);
+console.log('🌐 Backend URL:', BACKEND_URL);
+console.log('🏠 Frontend URL:', FRONTEND_URL);
 
 // Add CSS for notifications and connection status
 function addGlobalStyles() {
@@ -914,15 +921,6 @@ function addGlobalStyles() {
             #healthyfins-loading {
                 backdrop-filter: blur(5px);
             }
-            
-            /* Hardware ID validation */
-            .hardware-id-valid {
-                border-color: #27ae60 !important;
-            }
-            
-            .hardware-id-invalid {
-                border-color: #e74c3c !important;
-            }
         `;
         document.head.appendChild(style);
         console.log('✅ Global styles added');
@@ -931,3 +929,4 @@ function addGlobalStyles() {
 
 // Add global styles
 addGlobalStyles();
+
