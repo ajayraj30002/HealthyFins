@@ -443,166 +443,110 @@ function displayResults(result) {
 }
 
 function updateTreatmentText(disease, confidence, modelType = 'ai_model') {
+    // Kerala Fish Health Helplines
+    const keralaHelplines = 
+        '\n\n📞 **KERALA FISH HEALTH EMERGENCY CONTACTS:**\n' +
+        '• **KFHA Helpline:** +91-471-2318034\n' +
+        '• **Aquatic Disease Diagnostic Lab:** +91-487-2300291\n' +
+        '• **Kerala University of Fisheries:** +91-484-2381434\n' +
+        '• **Emergency Vet (24/7):** +91-9895-430-210';
+    
     const treatments = {
         // ==================== HEALTHY ====================
-        'healthy': '✅ **HEALTHY FISH**\n\n' +
-                  '🎉 Congratulations! Your fish appears to be in good health.\n\n' +
-                  '📋 **MAINTENANCE RECOMMENDATIONS:**\n' +
-                  '1. **Water Changes:** 20-25% weekly\n' +
-                  '2. **Water Parameters:**\n' +
-                  '   • Temperature: 24-28°C\n' +
-                  '   • pH: 6.5-8.0\n' +
-                  '   • Ammonia/Nitrite: 0 ppm\n' +
-                  '   • Nitrate: <40 ppm\n' +
-                  '3. **Feeding:** High-quality fish food 1-2 times daily\n' +
-                  '4. **Observation:** Watch for changes in behavior/appearance\n' +
-                  '5. **Quarantine:** Always quarantine new fish for 2 weeks',
+        'healthy': '✅ **HEALTHY FISH - DIAGNOSIS CONFIRMED**\n\n' +
+                  '📋 **MAINTENANCE CHECKLIST:**\n\n' +
+                  '1️⃣ **Weekly Water Changes** - 20-25% volume replacement\n' +
+                  '2️⃣ **Optimal Temperature** - Maintain 24-28°C range\n' +
+                  '3️⃣ **pH Balance** - Keep between 6.5-8.0\n' +
+                  '4️⃣ **Quality Feeding** - Balanced diet, avoid overfeeding\n' +
+                  '5️⃣ **Regular Monitoring** - Daily behavior observation\n' +
+                  '6️⃣ **Quarantine Protocol** - 2 weeks for new additions\n' +
+                  '7️⃣ **Filter Maintenance** - Clean monthly, never replace all media\n\n' +
+                  '🎯 **Prevention is always better than cure!**' + keralaHelplines,
         
         // ==================== BACTERIAL RED DISEASE ====================
-        'bacterial red disease': '🚨 **BACTERIAL RED DISEASE DETECTED**\n\n' +
-                                '⚠️ **SEVERITY:** HIGH (Contagious)\n\n' +
-                                '💊 **TREATMENT PROTOCOL:**\n' +
-                                '1. **Antibacterial Medication:**\n' +
-                                '   • Kanaplex or Maracyn-Two\n' +
-                                '   • Follow dosage instructions\n' +
-                                '   • Treat for 7-10 days\n\n' +
-                                '2. **Salt Treatment:**\n' +
-                                '   • 1 tablespoon aquarium salt per 20 liters\n' +
-                                '   • Dissolve before adding\n\n' +
-                                '3. **Water Management:**\n' +
-                                '   • 50% water change immediately\n' +
-                                '   • Test and correct water parameters\n' +
-                                '   • Increase aeration\n\n' +
-                                '4. **Isolation:**\n' +
-                                '   • Move to hospital tank if possible\n' +
-                                '   • Prevent spread to other fish\n\n' +
-                                '📞 **Consult aquatic veterinarian if no improvement in 3 days**',
+        'bacterial red disease': '🚨 **BACTERIAL RED DISEASE - CRITICAL ALERT**\n\n' +
+                                '🩺 **IMMEDIATE ACTION REQUIRED:**\n\n' +
+                                '1️⃣ **Antibiotic Treatment** - Kanaplex/Maracyn for 7-10 days\n' +
+                                '2️⃣ **Salt Therapy** - 1 tbsp per 20L, dissolve completely\n' +
+                                '3️⃣ **Emergency Water Change** - 50% immediately\n' +
+                                '4️⃣ **Isolation Protocol** - Hospital tank setup mandatory\n' +
+                                '5️⃣ **Aeration Boost** - Maximum oxygen supply\n' +
+                                '6️⃣ **Parameter Testing** - Daily ammonia/nitrite checks\n' +
+                                '7️⃣ **Vet Consultation** - Required within 48 hours\n\n' +
+                                '⚠️ **Contagious - Isolate immediately!**' + keralaHelplines,
         
         // ==================== PARASITIC DISEASES ====================
         'parasitic diseases': '⚠️ **PARASITIC INFECTION DETECTED**\n\n' +
-                             '🦠 **TYPE:** External/Internal Parasites\n\n' +
-                             '💊 **TREATMENT PROTOCOL:**\n' +
-                             '1. **Anti-parasitic Medication:**\n' +
-                                '   • Praziquantel for internal parasites\n' +
-                                '   • Formalin or Malachite Green for external\n' +
-                                '   • Treat for 10-14 days\n\n' +
-                                '2. **Salt Bath (for external parasites):**\n' +
-                                '   • 3% salt solution for 5-10 minutes\n' +
-                                '   • Monitor fish closely during bath\n\n' +
-                                '3. **Tank Management:**\n' +
-                                '   • Vacuum substrate thoroughly\n' +
-                                '   • Clean filter media\n' +
-                                '   • Treat entire tank\n\n' +
-                                '4. **Temperature:**\n' +
-                                '   • Increase to 30°C to speed parasite lifecycle\n\n' +
-                                '🔄 **Repeat treatment after 7 days to kill newly hatched parasites**',
+                             '🦠 **TREATMENT PROTOCOL:**\n\n' +
+                             '1️⃣ **Anti-parasitic Meds** - Praziquantel for 10-14 days\n' +
+                             '2️⃣ **Salt Baths** - 3% solution for 5-10 minutes daily\n' +
+                             '3️⃣ **Temperature Increase** - Raise to 30°C gradually\n' +
+                             '4️⃣ **Tank Vacuuming** - Deep clean substrate thoroughly\n' +
+                             '5️⃣ **Filter Cleaning** - Replace/clean all media\n' +
+                             '6️⃣ **Repeat Treatment** - Second dose after 7 days\n' +
+                             '7️⃣ **Monitor Behavior** - Watch for flashing/rubbing\n\n' +
+                             '🔄 **Lifecycle breaks in 7 days - repeat essential**' + keralaHelplines,
         
         // ==================== VIRAL DISEASES WHITE TAIL DISEASE ====================
-        'viral diseases white tail disease': '🚨 **VIRAL WHITE TAIL DISEASE DETECTED**\n\n' +
-                                            '🦠 **TYPE:** Viral Infection\n\n' +
-                                            '⚠️ **NOTE:** No direct antiviral medication available\n\n' +
-                                            '🏥 **SUPPORTIVE CARE PROTOCOL:**\n' +
-                                            '1. **Water Quality:**\n' +
-                                            '   • Maintain pristine conditions\n' +
-                                            '   • Zero ammonia/nitrite\n' +
-                                            '   • 50% water changes twice weekly\n\n' +
-                                            '2. **Immune Support:**\n' +
-                                            '   • Add Vitamin C to water\n' +
-                                            '   • Use high-quality, vitamin-rich food\n' +
-                                            '   • Maintain optimal temperature (26-28°C)\n\n' +
-                                            '3. **Secondary Infection Prevention:**\n' +
-                                            '   • Add aquarium salt (1 tsp per 4L)\n' +
-                                            '   • Monitor for bacterial/fungal infections\n\n' +
-                                            '4. **Stress Reduction:**\n' +
-                                            '   • Minimize handling\n' +
-                                            '   • Reduce light intensity\n' +
-                                            '   • Provide hiding places\n\n' +
-                                            '📞 **Veterinary consultation recommended for severe cases**',
+        'viral diseases white tail disease': '🚨 **VIRAL WHITE TAIL DISEASE**\n\n' +
+                                            '🏥 **SUPPORTIVE CARE PROTOCOL:**\n\n' +
+                                            '1️⃣ **Water Perfection** - Zero ammonia/nitrite mandatory\n' +
+                                            '2️⃣ **Immune Boosters** - Vitamin C supplements added\n' +
+                                            '3️⃣ **Temperature Control** - Maintain steady 26-28°C\n' +
+                                            '4️⃣ **Salt Support** - 1 tsp per 4L for gill function\n' +
+                                            '5️⃣ **Stress Reduction** - Dim lights, minimize handling\n' +
+                                            '6️⃣ **Secondary Prevention** - Watch for bacterial/fungal\n' +
+                                            '7️⃣ **Nutrition Focus** - High-quality vitamin-rich food\n\n' +
+                                            '⚠️ **No direct antiviral treatment - supportive care only**' + keralaHelplines,
         
         // ==================== FUNGAL DISEASES SAPROLEGNIASIS ====================
-        'fungal diseases saprolegniasis': '⚠️ **FUNGAL INFECTION (SAPROLEGNIASIS) DETECTED**\n\n' +
-                                         '🍄 **TYPE:** Water Mold Fungus\n\n' +
-                                         '💊 **TREATMENT PROTOCOL:**\n' +
-                                         '1. **Antifungal Medication:**\n' +
-                                         '   • Methylene Blue baths\n' +
-                                         '   • Malachite Green (carefully dosed)\n' +
-                                         '   • API Fungus Cure\n' +
-                                         '   • Treat for 7-10 days\n\n' +
-                                         '2. **Salt Treatment:**\n' +
-                                         '   • 1 tablespoon per 20 liters\n' +
-                                         '   • Helps prevent secondary infections\n\n' +
-                                         '3. **Water Management:**\n' +
-                                         '   • Improve filtration\n' +
-                                         '   • Reduce organic waste\n' +
-                                         '   • Increase water changes\n\n' +
-                                         '4. **Wound Care:**\n' +
-                                         '   • Remove dead tissue if possible\n' +
-                                         '   • Prevent injury from tank decorations\n\n' +
-                                         '🌡️ **Increase temperature to 28°C to inhibit fungal growth**',
+        'fungal diseases saprolegniasis': '⚠️ **FUNGAL INFECTION (SAPROLEGNIASIS)**\n\n' +
+                                         '🍄 **TREATMENT PLAN:**\n\n' +
+                                         '1️⃣ **Antifungal Medication** - Methylene Blue baths\n' +
+                                         '2️⃣ **Salt Treatment** - 1 tbsp per 20L tank water\n' +
+                                         '3️⃣ **Wound Management** - Remove dead tissue carefully\n' +
+                                         '4️⃣ **Filtration Upgrade** - Increase mechanical filtration\n' +
+                                         '5️⃣ **Organic Reduction** - Vacuum waste daily\n' +
+                                         '6️⃣ **Temperature Adjustment** - Increase to 28°C\n' +
+                                         '7️⃣ **Medication Duration** - Continue for 7-10 days\n\n' +
+                                         '🌡️ **Warm water inhibits fungal growth**' + keralaHelplines,
         
         // ==================== BACTERIAL DISEASES - AEROMONIASIS ====================
-        'bacterial diseases - aeromoniasis': '🚨 **AEROMONIASIS DETECTED**\n\n' +
-                                            '⚠️ **SEVERITY:** CRITICAL (Highly Contagious)\n\n' +
-                                            '🏥 **EMERGENCY TREATMENT PROTOCOL:**\n' +
-                                            '1. **Immediate Isolation:**\n' +
-                                            '   • Move to hospital tank immediately\n' +
-                                            '   • Use separate equipment\n\n' +
-                                            '2. **Antibiotic Treatment:**\n' +
-                                            '   • Kanamycin or Enrofloxacin\n' +
-                                            '   • May require prescription\n' +
-                                            '   • Treat for 10-14 days\n\n' +
-                                            '3. **Hospital Tank Setup:**\n' +
-                                            '   • Bare bottom for easy cleaning\n' +
-                                            '   • Sponge filter only\n' +
-                                            '   • Daily 50% water changes\n\n' +
-                                            '4. **Disinfection:**\n' +
-                                            '   • Disinfect main tank with bleach solution\n' +
-                                            '   • Replace filter media\n' +
-                                            '   • Sterilize all equipment\n\n' +
-                                            '📞 **IMMEDIATE VETERINARY CONSULTATION REQUIRED**',
+        'bacterial diseases - aeromoniasis': '🚨 **AEROMONIASIS - EMERGENCY**\n\n' +
+                                            '🏥 **CRITICAL CARE PROTOCOL:**\n\n' +
+                                            '1️⃣ **Immediate Isolation** - Hospital tank NOW\n' +
+                                            '2️⃣ **Prescription Antibiotics** - Kanamycin/Enrofloxacin\n' +
+                                            '3️⃣ **Bare Tank Setup** - No substrate for easy cleaning\n' +
+                                            '4️⃣ **Daily Water Changes** - 50% minimum daily\n' +
+                                            '5️⃣ **Main Tank Disinfection** - Bleach solution required\n' +
+                                            '6️⃣ **Equipment Sterilization** - All tools must be sterilized\n' +
+                                            '7️⃣ **Veterinary Emergency** - Immediate consultation needed\n\n' +
+                                            '⚠️ **HIGHLY CONTAGIOUS - Complete isolation required**' + keralaHelplines,
         
         // ==================== BACTERIAL GILL DISEASE ====================
-        'bacterial gill disease': '⚠️ **BACTERIAL GILL DISEASE DETECTED**\n\n' +
-                                  '🦠 **TYPE:** Gill-Specific Bacterial Infection\n\n' +
-                                  '💊 **TREATMENT PROTOCOL:**\n' +
-                                  '1. **Antibiotic Treatment:**\n' +
-                                  '   • Oxytetracycline in food\n' +
-                                  '   • 50 mg/kg body weight daily\n' +
-                                  '   • Treat for 5-7 days\n\n' +
-                                  '2. **Oxygenation:**\n' +
-                                  '   • Increase aeration significantly\n' +
-                                  '   • Add air stone\n' +
-                                  '   • Reduce water level to increase surface agitation\n\n' +
-                                  '3. **Water Quality:**\n' +
-                                  '   • Zero ammonia essential\n' +
-                                  '   • Reduce stocking density\n' +
-                                  '   • 30% water changes daily\n\n' +
-                                  '4. **Salt Treatment:**\n' +
-                                  '   • 2-3 g/L salt bath for 30 minutes daily\n' +
-                                  '   • Helps reduce gill inflammation\n\n' +
-                                  '🌡️ **Maintain temperature at 24-26°C**',
+        'bacterial gill disease': '⚠️ **BACTERIAL GILL DISEASE**\n\n' +
+                                  '🩺 **RESPIRATORY TREATMENT:**\n\n' +
+                                  '1️⃣ **Antibiotic Food** - Oxytetracycline 50mg/kg daily\n' +
+                                  '2️⃣ **Oxygen Maximization** - Add multiple air stones\n' +
+                                  '3️⃣ **Water Level Reduction** - Increase surface agitation\n' +
+                                  '4️⃣ **Ammonia Control** - Must maintain ZERO ppm\n' +
+                                  '5️⃣ **Salt Baths** - 2-3g/L for 30 minutes daily\n' +
+                                  '6️⃣ **Stocking Reduction** - Decrease fish density immediately\n' +
+                                  '7️⃣ **Water Changes** - 30% daily until improvement\n\n' +
+                                  '💨 **Oxygen is critical - maximize aeration**' + keralaHelplines,
         
         // ==================== EUS ULCERATIVE SYNDROME ====================
-        'eus_ulcerative_syndrome (arg)': '🚨 **EPIZOOTIC ULCERATIVE SYNDROME (EUS) DETECTED**\n\n' +
-                                         '⚠️ **SEVERITY:** CRITICAL\n\n' +
-                                         '🏥 **COMPREHENSIVE TREATMENT PROTOCOL:**\n' +
-                                         '1. **Combination Therapy:**\n' +
-                                         '   • Antibiotics: Oxytetracycline\n' +
-                                         '   • Antifungals: Potassium permanganate baths\n' +
-                                         '   • Treat for minimum 14 days\n\n' +
-                                         '2. **Wound Management:**\n' +
-                                         '   • Clean ulcers with hydrogen peroxide (3%)\n' +
-                                         '   • Apply topical antibiotic ointment\n' +
-                                         '   • Prevent secondary infections\n\n' +
-                                         '3. **Environmental Control:**\n' +
-                                         '   • Maintain pH >7.0\n' +
-                                         '   • Reduce organic load\n' +
-                                         '   • Increase water hardness\n\n' +
-                                         '4. **Nutritional Support:**\n' +
-                                         '   • High-protein food with vitamins\n' +
-                                         '   • Garlic supplements to boost immunity\n' +
-                                         '   • Feed small amounts frequently\n\n' +
-                                         '📞 **REQUIRES PROFESSIONAL VETERINARY CARE**'
+        'eus_ulcerative_syndrome (arg)': '🚨 **EUS - EPIZOOTIC ULCERATIVE SYNDROME**\n\n' +
+                                         '🏥 **COMPREHENSIVE TREATMENT:**\n\n' +
+                                         '1️⃣ **Combination Therapy** - Antibiotics + Antifungals\n' +
+                                         '2️⃣ **Wound Cleaning** - Hydrogen peroxide 3% on ulcers\n' +
+                                         '3️⃣ **pH Management** - Maintain above 7.0 at all times\n' +
+                                         '4️⃣ **Potassium Permanganate** - Medicated baths\n' +
+                                         '5️⃣ **Nutrition Support** - High-protein, vitamin-rich food\n' +
+                                         '6️⃣ **Hardness Increase** - Raise water hardness\n' +
+                                         '7️⃣ **Extended Treatment** - Minimum 14-day protocol\n\n' +
+                                         '⚠️ **REQUIRES PROFESSIONAL VETERINARY MANAGEMENT**' + keralaHelplines
     };
     
     let treatment = treatments['healthy'];
@@ -626,36 +570,56 @@ function updateTreatmentText(disease, confidence, modelType = 'ai_model') {
     } else if (diseaseLower.includes('eus') || diseaseLower.includes('ulcerative')) {
         treatment = treatments['eus_ulcerative_syndrome (arg)'];
     } else if (diseaseLower.includes('bacterial')) {
-        // Fallback for any other bacterial disease
         treatment = treatments['bacterial red disease'];
     }
     
     // Add confidence warning if low
     if (confidence < 70) {
-        treatment = '⚠️ **LOW CONFIDENCE PREDICTION** (' + confidence + '%)\n\n' + 
-                   '🔍 **RECOMMENDATION:**\n' +
-                   '• Take clearer photos from multiple angles\n' +
-                   '• Observe fish for additional symptoms\n' +
-                   '• Consult aquatic veterinarian for confirmation\n\n' +
+        treatment = '⚠️ **LOW CONFIDENCE ALERT** (' + confidence + '%)\n\n' + 
+                   '🔍 **RECOMMENDED ACTIONS:**\n\n' +
+                   '1️⃣ **Retake Photos** - Clear, well-lit images from multiple angles\n' +
+                   '2️⃣ **Symptom Checklist** - Note all observable symptoms\n' +
+                   '3️⃣ **Water Testing** - Complete parameter test immediately\n' +
+                   '4️⃣ **Behavior Log** - Record swimming/eating patterns\n' +
+                   '5️⃣ **Professional Consult** - Contact helpline below\n\n' +
                    '---\n\n' + treatment;
     }
     
     // Add model type note
     if (modelType !== 'ai_model') {
-        treatment = 'ℹ️ **INTELLIGENT ANALYSIS MODE**\n' +
-                   '(AI model unavailable - using color/texture analysis)\n\n' +
-                   '📱 **For more accurate diagnosis:**\n' +
-                   '• Ensure backend AI model is loaded\n' +
-                   '• Use clear, well-lit photos\n' +
-                   '• Capture from multiple angles\n\n' +
+        treatment = '🔬 **INTELLIGENT ANALYSIS MODE**\n\n' +
+                   'ℹ️ **System Status:** AI model currently unavailable\n\n' +
+                   '📋 **For better accuracy:**\n\n' +
+                   '1️⃣ **Use clear photos** - Good lighting, multiple angles\n' +
+                   '2️⃣ **Check backend status** - Ensure AI model is loaded\n' +
+                   '3️⃣ **Consider manual diagnosis** - Use helpline consultation\n' +
+                   '4️⃣ **Monitor symptoms** - Keep detailed observations\n\n' +
                    '---\n\n' + treatment;
     }
     
     const treatmentElement = document.getElementById('treatmentText');
     if (treatmentElement) {
-        treatmentElement.textContent = treatment;
-        // Optional: Add HTML formatting if you want
-        // treatmentElement.innerHTML = treatment.replace(/\n/g, '<br>');
+        // For better formatting, we'll use innerHTML with line breaks
+        const formattedTreatment = treatment
+            .replace(/\n/g, '<br>')
+            .replace(/1️⃣/g, '<span style="color: #2c8c99; font-weight: bold;">1.</span>')
+            .replace(/2️⃣/g, '<span style="color: #2c8c99; font-weight: bold;">2.</span>')
+            .replace(/3️⃣/g, '<span style="color: #2c8c99; font-weight: bold;">3.</span>')
+            .replace(/4️⃣/g, '<span style="color: #2c8c99; font-weight: bold;">4.</span>')
+            .replace(/5️⃣/g, '<span style="color: #2c8c99; font-weight: bold;">5.</span>')
+            .replace(/6️⃣/g, '<span style="color: #2c8c99; font-weight: bold;">6.</span>')
+            .replace(/7️⃣/g, '<span style="color: #2c8c99; font-weight: bold;">7.</span>');
+        
+        treatmentElement.innerHTML = formattedTreatment;
+        
+        // Add some CSS for better readability
+        treatmentElement.style.whiteSpace = 'pre-line';
+        treatmentElement.style.lineHeight = '1.6';
+        treatmentElement.style.fontSize = '14px';
+        treatmentElement.style.padding = '15px';
+        treatmentElement.style.backgroundColor = '#f8f9fa';
+        treatmentElement.style.borderRadius = '8px';
+        treatmentElement.style.borderLeft = '4px solid #2c8c99';
     }
 }
 
