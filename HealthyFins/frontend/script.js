@@ -1,9 +1,8 @@
-// script.js - COMPLETE UPDATED VERSION
+// script.js - COMPLETE FIXED VERSIOn
 
 // Global variables
 let currentFile = null;
 let currentResult = null;
-const BACKEND_URL = "https://healthyfins.onrender.com";
 
 // Initialize dashboard
 document.addEventListener('DOMContentLoaded', function() {
@@ -60,7 +59,7 @@ async function testBackendConnection() {
     }
 }
 
-// Setup file upload functionality
+// Setup file upload functionality - FIXED VERSION
 function setupFileUpload() {
     const fileInput = document.getElementById('fileInput');
     const uploadArea = document.getElementById('uploadArea');
@@ -162,15 +161,11 @@ function handleFiles(files) {
     const reader = new FileReader();
     reader.onload = function(e) {
         console.log('🖼️ Image loaded for preview');
-        const previewImg = document.getElementById('previewImage');
-        if (previewImg) {
-            previewImg.src = e.target.result;
-        }
-        const previewSection = document.getElementById('previewSection');
-        if (previewSection) previewSection.style.display = 'block';
-        if (uploadArea) uploadArea.style.display = 'none';
-        if (resultsSection) resultsSection.style.display = 'none';
-        if (loadingSection) loadingSection.style.display = 'none';
+        document.getElementById('previewImage').src = e.target.result;
+        document.getElementById('previewSection').style.display = 'block';
+        document.getElementById('uploadArea').style.display = 'none';
+        document.getElementById('resultsSection').style.display = 'none';
+        document.getElementById('loadingSection').style.display = 'none';
     };
     reader.onerror = function(e) {
         console.error('❌ Error reading file:', e);
@@ -179,7 +174,7 @@ function handleFiles(files) {
     reader.readAsDataURL(file);
 }
 
-// Analyze image with AI
+// Analyze image with AI - FIXED VERSION
 async function analyzeImage() {
     if (!currentFile) {
         showNotification('Please select an image first!', 'warning');
@@ -189,13 +184,9 @@ async function analyzeImage() {
     console.log('🔍 Starting image analysis...');
     
     // Show loading
-    const loadingSection = document.getElementById('loadingSection');
-    const previewSection = document.getElementById('previewSection');
-    const resultsSection = document.getElementById('resultsSection');
-    
-    if (loadingSection) loadingSection.style.display = 'block';
-    if (previewSection) previewSection.style.display = 'none';
-    if (resultsSection) resultsSection.style.display = 'none';
+    document.getElementById('loadingSection').style.display = 'block';
+    document.getElementById('previewSection').style.display = 'none';
+    document.getElementById('resultsSection').style.display = 'none';
     
     try {
         const formData = new FormData();
@@ -203,7 +194,7 @@ async function analyzeImage() {
         
         console.log('📤 Sending to backend:', BACKEND_URL + '/predict');
         
-        // Get token
+        // Get token from auth.js
         const token = localStorage.getItem('healthyfins_token') || localStorage.getItem('token');
         if (!token) {
             throw new Error('No authentication token found. Please login again.');
@@ -216,6 +207,7 @@ async function analyzeImage() {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`
+                // Note: Don't set Content-Type for FormData
             },
             body: formData
         });
@@ -241,6 +233,7 @@ async function analyzeImage() {
                 const errorData = JSON.parse(errorText);
                 errorMessage = errorData.detail || errorData.message || errorMessage;
             } catch (e) {
+                // Not JSON, use raw text
                 errorMessage = errorText || errorMessage;
             }
             
@@ -253,6 +246,8 @@ async function analyzeImage() {
         if (result.success) {
             currentResult = result;
             displayResults(result);
+            // Automatically save to history
+            saveResult();
             showNotification('Analysis complete!', 'success');
         } else {
             throw new Error(result.detail || 'Prediction failed');
@@ -278,16 +273,13 @@ async function analyzeImage() {
             showNotification('Could not analyze image. Please try another image.', 'error');
             
             // Reset UI
-            const loadingSection = document.getElementById('loadingSection');
-            const previewSection = document.getElementById('previewSection');
-            if (loadingSection) loadingSection.style.display = 'none';
-            if (previewSection) previewSection.style.display = 'block';
+            document.getElementById('loadingSection').style.display = 'none';
+            document.getElementById('previewSection').style.display = 'block';
         }
     } finally {
         // Hide loading
         setTimeout(() => {
-            const loadingSection = document.getElementById('loadingSection');
-            if (loadingSection) loadingSection.style.display = 'none';
+            document.getElementById('loadingSection').style.display = 'none';
         }, 500);
     }
 }
@@ -397,23 +389,18 @@ function displayResults(result) {
     const confidence = result.confidence;
     
     // Update UI
-    const resultDisease = document.getElementById('resultDisease');
-    const confidenceValue = document.getElementById('confidenceValue');
-    const confidenceFill = document.getElementById('confidenceFill');
-    const badge = document.getElementById('diseaseBadge');
-    
-    if (resultDisease) resultDisease.textContent = disease;
-    if (confidenceValue) confidenceValue.textContent = `${confidence}%`;
+    document.getElementById('resultDisease').textContent = disease;
+    document.getElementById('confidenceValue').textContent = `${confidence}%`;
     
     // Animate confidence bar
-    if (confidenceFill) {
-        confidenceFill.style.width = '0%';
-        setTimeout(() => {
-            confidenceFill.style.width = `${confidence}%`;
-        }, 100);
-    }
+    const confidenceFill = document.getElementById('confidenceFill');
+    confidenceFill.style.width = '0%';
+    setTimeout(() => {
+        confidenceFill.style.width = `${confidence}%`;
+    }, 100);
     
     // Update badge
+    const badge = document.getElementById('diseaseBadge');
     if (badge) {
         badge.textContent = disease.includes('Healthy') ? 'Healthy' : 'Disease';
         badge.className = 'badge ' + (
@@ -435,32 +422,29 @@ function displayResults(result) {
     
     // Add to results
     const resultContent = document.querySelector('.result-content');
-    if (resultContent) {
-        const existingIndicator = resultContent.querySelector('.model-indicator');
-        if (existingIndicator) existingIndicator.remove();
-        modelIndicator.className = 'model-indicator';
-        resultContent.appendChild(modelIndicator);
-    }
+    const existingIndicator = resultContent.querySelector('.model-indicator');
+    if (existingIndicator) existingIndicator.remove();
+    modelIndicator.className = 'model-indicator';
+    resultContent.appendChild(modelIndicator);
     
     // Show results with animation
     const resultsSection = document.getElementById('resultsSection');
-    if (resultsSection) {
-        resultsSection.style.display = 'block';
-        resultsSection.style.opacity = '0';
-        resultsSection.style.transform = 'translateY(20px)';
-        
-        setTimeout(() => {
-            resultsSection.style.opacity = '1';
-            resultsSection.style.transform = 'translateY(0)';
-            resultsSection.style.transition = 'opacity 0.5s, transform 0.5s';
-        }, 100);
-    }
+    resultsSection.style.display = 'block';
+    resultsSection.style.opacity = '0';
+    resultsSection.style.transform = 'translateY(20px)';
+    
+    setTimeout(() => {
+        resultsSection.style.opacity = '1';
+        resultsSection.style.transform = 'translateY(0)';
+        resultsSection.style.transition = 'opacity 0.5s, transform 0.5s';
+    }, 100);
     
     console.log('✅ Results displayed');
 }
 
 function updateTreatmentText(disease, confidence, modelType = 'ai_model') {
     const treatments = {
+        // ==================== HEALTHY ====================
         'healthy': 'HEALTHY FISH - DIAGNOSIS CONFIRMED\n\n' +
                   'MAINTENANCE CHECKLIST:\n\n' +
                   '1. Weekly Water Changes - 20-25% volume replacement\n' +
@@ -472,6 +456,7 @@ function updateTreatmentText(disease, confidence, modelType = 'ai_model') {
                   '7. Filter Maintenance - Clean monthly, never replace all media\n\n' +
                   'Prevention is always better than cure!',
         
+        // ==================== BACTERIAL RED DISEASE ====================
         'bacterial red disease': 'BACTERIAL RED DISEASE - CRITICAL ALERT\n\n' +
                                 'IMMEDIATE ACTION REQUIRED:\n\n' +
                                 '1. Antibiotic Treatment - Kanaplex/Maracyn for 7-10 days\n' +
@@ -483,6 +468,7 @@ function updateTreatmentText(disease, confidence, modelType = 'ai_model') {
                                 '7. Vet Consultation - Required within 48 hours\n\n' +
                                 'Contagious - Isolate immediately!',
         
+        // ==================== PARASITIC DISEASES ====================
         'parasitic diseases': 'PARASITIC INFECTION DETECTED\n\n' +
                              'TREATMENT PROTOCOL:\n\n' +
                              '1. Anti-parasitic Meds - Praziquantel for 10-14 days\n' +
@@ -494,6 +480,7 @@ function updateTreatmentText(disease, confidence, modelType = 'ai_model') {
                              '7. Monitor Behavior - Watch for flashing/rubbing\n\n' +
                              'Lifecycle breaks in 7 days - repeat essential',
         
+        // ==================== VIRAL DISEASES WHITE TAIL DISEASE ====================
         'viral diseases white tail disease': 'VIRAL WHITE TAIL DISEASE\n\n' +
                                             'SUPPORTIVE CARE PROTOCOL:\n\n' +
                                             '1. Water Perfection - Zero ammonia/nitrite mandatory\n' +
@@ -505,6 +492,7 @@ function updateTreatmentText(disease, confidence, modelType = 'ai_model') {
                                             '7. Nutrition Focus - High-quality vitamin-rich food\n\n' +
                                             'No direct antiviral treatment - supportive care only',
         
+        // ==================== FUNGAL DISEASES SAPROLEGNIASIS ====================
         'fungal diseases saprolegniasis': 'FUNGAL INFECTION (SAPROLEGNIASIS)\n\n' +
                                          'TREATMENT PLAN:\n\n' +
                                          '1. Antifungal Medication - Methylene Blue baths\n' +
@@ -516,6 +504,7 @@ function updateTreatmentText(disease, confidence, modelType = 'ai_model') {
                                          '7. Medication Duration - Continue for 7-10 days\n\n' +
                                          'Warm water inhibits fungal growth',
         
+        // ==================== BACTERIAL DISEASES - AEROMONIASIS ====================
         'bacterial diseases - aeromoniasis': 'AEROMONIASIS - EMERGENCY\n\n' +
                                             'CRITICAL CARE PROTOCOL:\n\n' +
                                             '1. Immediate Isolation - Hospital tank NOW\n' +
@@ -527,6 +516,7 @@ function updateTreatmentText(disease, confidence, modelType = 'ai_model') {
                                             '7. Veterinary Emergency - Immediate consultation needed\n\n' +
                                             'HIGHLY CONTAGIOUS - Complete isolation required',
         
+        // ==================== BACTERIAL GILL DISEASE ====================
         'bacterial gill disease': 'BACTERIAL GILL DISEASE\n\n' +
                                   'RESPIRATORY TREATMENT:\n\n' +
                                   '1. Antibiotic Food - Oxytetracycline 50mg/kg daily\n' +
@@ -536,13 +526,25 @@ function updateTreatmentText(disease, confidence, modelType = 'ai_model') {
                                   '5. Salt Baths - 2-3g/L for 30 minutes daily\n' +
                                   '6. Stocking Reduction - Decrease fish density immediately\n' +
                                   '7. Water Changes - 30% daily until improvement\n\n' +
-                                  'Oxygen is critical - maximize aeration'
+                                  'Oxygen is critical - maximize aeration',
+        
+        // ==================== EUS ULCERATIVE SYNDROME ====================
+        'eus_ulcerative_syndrome (arg)': 'EUS - EPIZOOTIC ULCERATIVE SYNDROME\n\n' +
+                                         'COMPREHENSIVE TREATMENT:\n\n' +
+                                         '1. Combination Therapy - Antibiotics + Antifungals\n' +
+                                         '2. Wound Cleaning - Hydrogen peroxide 3% on ulcers\n' +
+                                         '3. pH Management - Maintain above 7.0 at all times\n' +
+                                         '4. Potassium Permanganate - Medicated baths\n' +
+                                         '5. Nutrition Support - High-protein, vitamin-rich food\n' +
+                                         '6. Hardness Increase - Raise water hardness\n' +
+                                         '7. Extended Treatment - Minimum 14-day protocol\n\n' +
+                                         'REQUIRES PROFESSIONAL VETERINARY MANAGEMENT'
     };
     
     let treatment = treatments['healthy'];
     const diseaseLower = disease.toLowerCase();
     
-    // Match disease to treatment
+    // Match disease to treatment (case-insensitive)
     if (diseaseLower.includes('healthy')) {
         treatment = treatments['healthy'];
     } else if (diseaseLower.includes('bacterial red')) {
@@ -557,6 +559,8 @@ function updateTreatmentText(disease, confidence, modelType = 'ai_model') {
         treatment = treatments['bacterial diseases - aeromoniasis'];
     } else if (diseaseLower.includes('gill disease')) {
         treatment = treatments['bacterial gill disease'];
+    } else if (diseaseLower.includes('eus') || diseaseLower.includes('ulcerative')) {
+        treatment = treatments['eus_ulcerative_syndrome (arg)'];
     } else if (diseaseLower.includes('bacterial')) {
         treatment = treatments['bacterial red disease'];
     }
@@ -590,17 +594,17 @@ function updateTreatmentText(disease, confidence, modelType = 'ai_model') {
         // Format with line breaks and styling
         const formattedTreatment = treatment
             .replace(/\n/g, '<br>')
-            .replace(/1\./g, '<span style="color: #2c8c99; font-weight: bold;">1.</span>')
-            .replace(/2\./g, '<span style="color: #2c8c99; font-weight: bold;">2.</span>')
-            .replace(/3\./g, '<span style="color: #2c8c99; font-weight: bold;">3.</span>')
-            .replace(/4\./g, '<span style="color: #2c8c99; font-weight: bold;">4.</span>')
-            .replace(/5\./g, '<span style="color: #2c8c99; font-weight: bold;">5.</span>')
-            .replace(/6\./g, '<span style="color: #2c8c99; font-weight: bold;">6.</span>')
-            .replace(/7\./g, '<span style="color: #2c8c99; font-weight: bold;">7.</span>');
+            .replace(/1\./g, '<span class="treatment-step">1.</span>')
+            .replace(/2\./g, '<span class="treatment-step">2.</span>')
+            .replace(/3\./g, '<span class="treatment-step">3.</span>')
+            .replace(/4\./g, '<span class="treatment-step">4.</span>')
+            .replace(/5\./g, '<span class="treatment-step">5.</span>')
+            .replace(/6\./g, '<span class="treatment-step">6.</span>')
+            .replace(/7\./g, '<span class="treatment-step">7.</span>');
         
         treatmentElement.innerHTML = formattedTreatment;
         
-        // Add some CSS for better readability
+        // Add styling for better readability
         treatmentElement.style.whiteSpace = 'pre-line';
         treatmentElement.style.lineHeight = '1.6';
         treatmentElement.style.fontSize = '14px';
@@ -636,15 +640,10 @@ function clearImage() {
     currentFile = null;
     currentResult = null;
     
-    const previewSection = document.getElementById('previewSection');
-    const uploadArea = document.getElementById('uploadArea');
-    const resultsSection = document.getElementById('resultsSection');
-    const loadingSection = document.getElementById('loadingSection');
-    
-    if (previewSection) previewSection.style.display = 'none';
-    if (uploadArea) uploadArea.style.display = 'block';
-    if (resultsSection) resultsSection.style.display = 'none';
-    if (loadingSection) loadingSection.style.display = 'none';
+    document.getElementById('previewSection').style.display = 'none';
+    document.getElementById('uploadArea').style.display = 'block';
+    document.getElementById('resultsSection').style.display = 'none';
+    document.getElementById('loadingSection').style.display = 'none';
     
     const fileInput = document.getElementById('fileInput');
     if (fileInput) fileInput.value = '';
@@ -663,7 +662,6 @@ async function loadDashboardStats() {
     try {
         console.log('📈 Loading dashboard stats...');
         
-        // Get token
         const token = localStorage.getItem('healthyfins_token') || localStorage.getItem('token');
         if (!token) {
             console.log('❌ No token for stats');
@@ -671,7 +669,7 @@ async function loadDashboardStats() {
             return;
         }
         
-        const response = await fetch(`${BACKEND_URL}/stats`, {
+        const response = await fetch(`${BACKEND_URL}/history?limit=100`, {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Accept': 'application/json'
@@ -681,8 +679,8 @@ async function loadDashboardStats() {
         if (response.ok) {
             const data = await response.json();
             if (data.success) {
-                updateDashboardStats(data.stats);
-                console.log('✅ Stats loaded');
+                updateDashboardStats(data.history);
+                console.log('✅ Stats loaded:', data.count, 'records');
             }
         } else {
             console.log('⚠️ Could not load stats, using mock data');
@@ -694,10 +692,12 @@ async function loadDashboardStats() {
     }
 }
 
-function updateDashboardStats(stats) {
-    const total = stats.total_predictions || 0;
-    const healthy = stats.healthy_count || 0;
-    const diseases = stats.disease_count || 0;
+function updateDashboardStats(history) {
+    const total = history.length;
+    const healthy = history.filter(h => 
+        h.prediction && h.prediction.toLowerCase().includes('healthy')
+    ).length;
+    const diseases = total - healthy;
     
     // Update counters
     const totalScans = document.getElementById('totalScans');
@@ -725,7 +725,6 @@ async function loadRecentHistory() {
     try {
         console.log('📜 Loading recent history...');
         
-        // Get token
         const token = localStorage.getItem('healthyfins_token') || localStorage.getItem('token');
         if (!token) {
             displayRecentHistory([]);
@@ -755,14 +754,74 @@ async function loadRecentHistory() {
     }
 }
 
+function displayRecentHistory(history) {
+    const container = document.getElementById('recentHistory');
+    if (!container) return;
+    
+    if (!history || history.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-clock"></i>
+                <p>No scans yet. Upload your first fish image!</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '';
+    history.forEach((item, index) => {
+        const date = new Date(item.timestamp).toLocaleDateString();
+        const time = new Date(item.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        const isHealthy = item.prediction && item.prediction.toLowerCase().includes('healthy');
+        
+        html += `
+            <div class="history-item" style="animation: fadeIn 0.3s ease ${index * 0.1}s both;">
+                <div class="history-icon ${isHealthy ? 'healthy' : 'disease'}">
+                    <i class="fas ${isHealthy ? 'fa-check' : 'fa-exclamation'}"></i>
+                </div>
+                <div class="history-details">
+                    <h4>${item.prediction || 'Unknown'}</h4>
+                    <p>${date} at ${time}</p>
+                    <span class="confidence-badge">${item.confidence || 'N/A'}% confidence</span>
+                </div>
+                <button class="history-action" onclick="viewHistoryItem('${item.id || index}')">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
 // Load PH monitoring data
 async function loadPHData(forceRefresh = false) {
     try {
         console.log('🌡️ Loading PH data...');
         
-        // For now, use mock data
-        displayMockPHData();
+        const token = localStorage.getItem('healthyfins_token') || localStorage.getItem('token');
+        if (!token) {
+            displayMockPHData();
+            return;
+        }
         
+        const response = await fetch(`${BACKEND_URL}/ph-monitoring`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/json'
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+                displayPHData(data.data);
+                console.log('✅ PH data loaded');
+            }
+        } else {
+            console.log('⚠️ Could not load PH data, using mock');
+            displayMockPHData();
+        }
     } catch (error) {
         console.error('❌ Error loading PH data:', error);
         displayMockPHData();
@@ -833,31 +892,9 @@ function refreshPHData() {
 
 // Connect hardware
 function connectHardware() {
-    console.log('🔌 Connecting hardware...');
-    
-    const deviceId = prompt('Enter your Hardware Device ID (Format: HF-FDDS-XXX):');
-    
-    if (!deviceId) {
-        return;
-    }
-    
-    // Validate format
-    const pattern = /^HF-[A-Z]{2,4}-\d{3}$/;
-    if (!pattern.test(deviceId)) {
-        alert('❌ Invalid Hardware ID format!\n\nPlease use format: HF-FDDS-XXX\n\nExamples:\n• HF-FDDS-001\n• HF-PH-001\n• HF-TEMP-001');
-        return;
-    }
-    
-    // In a real implementation, you would connect to hardware here
-    // For now, just show a success message
-    showNotification(`✅ Hardware ${deviceId} connected successfully!`, 'success');
-    
-    // Update UI
-    const phStatus = document.getElementById('phStatus');
-    if (phStatus) {
-        phStatus.textContent = 'Connected';
-        phStatus.className = 'status-badge status-connected';
-    }
+    console.log('🔌 Redirecting to hardware setup');
+    showNotification('Redirecting to hardware setup...', 'info');
+    window.location.href = 'profile.html#hardware';
 }
 
 // Setup event listeners
@@ -879,10 +916,10 @@ function setupEventListeners() {
     // View history item
     window.viewHistoryItem = function(id) {
         console.log('📋 Viewing history item:', id);
-        showNotification('Opening history details...', 'info');
-        
-        // In a real app, you would fetch and display detailed history
-        alert(`History Item Details:\n\nID: ${id}\n\nFull details would open in a modal or new page.`);
+        showNotification('Opening history item...', 'info');
+        // In a real app, this would open a detailed view
+        // For now, just show the item
+        alert(`History item ${id} details would open here`);
     };
     
     // Add keyboard shortcuts
@@ -897,28 +934,6 @@ function setupEventListeners() {
             clearImage();
         }
     });
-}
-
-// Load dashboard data
-function loadDashboardData() {
-    console.log('📊 Loading dashboard data...');
-    loadDashboardStats();
-    loadRecentHistory();
-    loadPHData();
-    
-    // Load user data
-    const userStr = localStorage.getItem('healthyfins_user') || localStorage.getItem('user');
-    if (userStr) {
-        try {
-            const user = JSON.parse(userStr);
-            const userGreeting = document.getElementById('userGreeting');
-            const userName = document.getElementById('userName');
-            if (userGreeting) userGreeting.textContent = user.name || 'User';
-            if (userName) userName.textContent = user.name || 'User';
-        } catch (e) {
-            console.error('Error loading user data:', e);
-        }
-    }
 }
 
 // Show notification
@@ -1077,3 +1092,4 @@ if (typeof HealthyFins === 'undefined') {
         loadDashboardData();
     });
 }
+
