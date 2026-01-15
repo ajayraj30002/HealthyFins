@@ -1,4 +1,5 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, Form
+# app.py - COMPLETE VERSION WITH SUPABASE
+from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, Form, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import tensorflow as tf
@@ -8,10 +9,11 @@ import json
 import os
 import sys
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 import traceback
 import warnings
 import h5py
+from pydantic import BaseModel
 
 # Import our modules
 sys.path.append('.')
@@ -22,7 +24,7 @@ from auth import create_access_token, get_current_user
 app = FastAPI(
     title="HealthyFins API",
     description="AI Fish Disease Detection System",
-    version="4.0.0"
+    version="5.0.0"
 )
 
 # ========== CORS CONFIGURATION ==========
@@ -42,6 +44,18 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["*"]
 )
+
+# ========== PYDANTIC MODELS ==========
+class HistoryFilter(BaseModel):
+    disease_type: Optional[str] = None
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    min_confidence: Optional[float] = None
+    max_confidence: Optional[float] = None
+
+class UserUpdate(BaseModel):
+    name: Optional[str] = None
+    hardware_id: Optional[str] = None
 
 # ========== MODEL LOADING ==========
 model = None
@@ -287,25 +301,30 @@ async def root():
         "architecture": "MobileNetV2-based" if model is not None else "Enhanced Analysis"
     }
     
+    # Get available hardware IDs
+    hardware_ids = db.get_hardware_ids()
+    
     return {
         "message": "🐟 HealthyFins API",
         "status": "active",
-        "version": "4.0.0",
+        "version": "5.0.0",
         "frontend": "https://healthy-fins.vercel.app",
         "model": model_status,
+        "database": "supabase" if db.supabase else "local",
+        "hardware": {
+            "available_ids": hardware_ids[:5],  # Show first 5
+            "total_available": len(hardware_ids)
+        },
         "timestamp": datetime.now().isoformat(),
         "endpoints": {
-            "public": ["/", "/health", "/register", "/login"],
-            "protected": ["/predict", "/profile", "/history", "/ph-monitoring"]
+            "public": ["/", "/health", "/register", "/login", "/hardware"],
+            "protected": ["/predict", "/profile", "/history", "/stats", "/search"]
         }
     }
 
 @app.get("/health")
 async def health_check():
     """Comprehensive health check"""
-    users_count = len(db.data.get("users", {}))
-    history_count = sum(len(v) for v in db.data.get("history", {}).values())
-    
     model_info = {
         "loaded": model is not None,
         "type": "real_trained" if model is not None else "analysis_mode",
@@ -316,22 +335,46 @@ async def health_check():
         "output_shape": str(model.output_shape) if model is not None else "N/A"
     }
     
+    database_info = {
+        "type": "supabase" if db.supabase else "local",
+        "status": "connected" if db.supabase else "local_mode",
+        "hardware_ids": len(db.get_hardware_ids())
+    }
+    
     return {
         "status": "healthy",
-        "service": "HealthyFins Backend v4.0",
+        "service": "HealthyFins Backend v5.0",
         "timestamp": datetime.now().isoformat(),
         "model": model_info,
-        "database": {
-            "users": users_count,
-            "history_entries": history_count,
-            "file": "database.json"
-        },
+        "database": database_info,
         "system": {
             "python_version": sys.version.split()[0],
             "tensorflow_version": tf.__version__,
             "numpy_version": np.__version__,
             "environment": os.environ.get("RENDER", "development")
         }
+    }
+
+@app.get("/hardware")
+async def get_hardware_info():
+    """Get available hardware IDs"""
+    hardware_ids = db.get_hardware_ids()
+    
+    # Check availability for each ID
+    available_ids = []
+    for hw_id in hardware_ids:
+        available = db.check_hardware_available(hw_id)
+        available_ids.append({
+            "id": hw_id,
+            "available": available,
+            "type": "PH Monitoring Device"
+        })
+    
+    return {
+        "success": True,
+        "hardware": available_ids,
+        "total": len(available_ids),
+        "available": sum(1 for h in available_ids if h["available"])
     }
 
 # ========== AUTH ENDPOINTS ==========
@@ -552,13 +595,18 @@ async def predict_disease(
                 "confidence": float(predictions[idx_int]) * 100
             })
         
+        # Detect symptoms
+        symptoms = detect_symptoms(processed_image, disease_name)
+        
         # Save to history
         image_name = file.filename[:50]
         db.add_prediction_history(
             user_id=current_user["user_id"],
             image_name=image_name,
             prediction=disease_name,
-            confidence=confidence
+            confidence=confidence,
+            model_type=model_type,
+            symptoms=symptoms
         )
         
         print(f"✅ Prediction complete: {disease_name} ({confidence:.1f}%)")
@@ -567,6 +615,7 @@ async def predict_disease(
             "success": True,
             "prediction": disease_name,
             "confidence": round(confidence, 2),
+            "symptoms": symptoms,
             "top3": top3,
             "model_type": model_type,
             "model_available": model is not None,
@@ -574,7 +623,8 @@ async def predict_disease(
                 "id": current_user["user_id"],
                 "email": current_user["sub"]
             },
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
+            "urgent": confidence > 70 and "healthy" not in disease_name.lower()
         }
         
     except HTTPException:
@@ -584,14 +634,354 @@ async def predict_disease(
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Prediction error: {str(e)}")
 
-# ... (Keep all other endpoints the same as before - profile, history, etc.)
+def detect_symptoms(image_array, disease_name):
+    """Detect symptoms from image"""
+    symptoms = []
+    
+    try:
+        img_uint8 = (image_array[0] * 255).astype(np.uint8)
+        hsv = cv2.cvtColor(img_uint8, cv2.COLOR_RGB2HSV)
+        gray = cv2.cvtColor(img_uint8, cv2.COLOR_RGB2GRAY)
+        
+        # Check for common symptoms
+        # White spots
+        white_mask = (hsv[:,:,1] > 150) & (hsv[:,:,2] > 200)
+        if np.mean(white_mask) > 0.01:
+            symptoms.append("White spots")
+        
+        # Red patches
+        red_mask = (hsv[:,:,0] < 10) | (hsv[:,:,0] > 170)
+        if np.mean(red_mask) > 0.01:
+            symptoms.append("Red patches")
+        
+        # Dark areas (fungus/rot)
+        dark_mask = gray < 50
+        if np.mean(dark_mask) > 0.05:
+            symptoms.append("Dark patches")
+        
+        # Fuzzy growth
+        edges = cv2.Canny(gray, 100, 200)
+        if np.mean(edges) > 20:
+            symptoms.append("Fuzzy growth")
+        
+        # Based on disease name
+        disease_lower = disease_name.lower()
+        if 'gill' in disease_lower:
+            symptoms.append("Rapid gill movement")
+        if 'bacterial' in disease_lower:
+            symptoms.append("Swollen abdomen")
+        if 'fungal' in disease_lower:
+            symptoms.append("Cotton-like growth")
+        if 'parasitic' in disease_lower:
+            symptoms.append("Flashing/rubbing")
+        
+    except Exception as e:
+        print(f"❌ Symptom detection error: {e}")
+        symptoms = ["Visual inspection recommended"]
+    
+    return symptoms[:5]  # Return top 5 symptoms
+
+# ========== PROFILE ENDPOINTS ==========
+@app.get("/profile")
+async def get_profile(current_user: dict = Depends(get_current_user)):
+    """Get user profile"""
+    try:
+        profile = db.get_user_profile(current_user["user_id"])
+        
+        if not profile:
+            raise HTTPException(status_code=404, detail="Profile not found")
+        
+        # Get statistics
+        stats = db.get_history_stats(current_user["user_id"])
+        
+        return {
+            "success": True,
+            "profile": profile,
+            "stats": stats
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Get profile error: {e}")
+        raise HTTPException(status_code=500, detail=f"Error fetching profile: {str(e)}")
+
+@app.put("/profile")
+async def update_profile(
+    update_data: UserUpdate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update user profile"""
+    try:
+        success, message = db.update_user_profile(
+            user_id=current_user["user_id"],
+            name=update_data.name,
+            hardware_id=update_data.hardware_id
+        )
+        
+        if not success:
+            raise HTTPException(status_code=400, detail=message)
+        
+        return {
+            "success": True,
+            "message": message,
+            "updated_fields": update_data.dict(exclude_none=True)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Update profile error: {e}")
+        raise HTTPException(status_code=500, detail=f"Error updating profile: {str(e)}")
+
+# ========== HISTORY ENDPOINTS ==========
+@app.get("/history")
+async def get_history(
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    disease_type: Optional[str] = Query(None),
+    search: Optional[str] = Query(None),
+    current_user: dict = Depends(get_current_user)
+):
+    """Get user's prediction history"""
+    try:
+        user_id = current_user["user_id"]
+        
+        if search:
+            # Search in history
+            history = db.search_history(user_id, search, limit)
+            total = len(history)
+        else:
+            # Get filtered history
+            history = db.get_user_history(user_id, limit, offset, disease_type)
+            
+            # Get total count for pagination
+            stats = db.get_history_stats(user_id)
+            total = stats["total"]
+        
+        return {
+            "success": True,
+            "history": history,
+            "count": len(history),
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+            "has_more": (offset + len(history)) < total
+        }
+        
+    except Exception as e:
+        print(f"❌ Get history error: {e}")
+        raise HTTPException(status_code=500, detail=f"Error fetching history: {str(e)}")
+
+@app.get("/history/{entry_id}")
+async def get_history_entry(
+    entry_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get specific history entry"""
+    try:
+        history = db.get_user_history(current_user["user_id"], limit=100)
+        
+        # Find the specific entry
+        entry = next((h for h in history if h["id"] == entry_id), None)
+        
+        if not entry:
+            raise HTTPException(status_code=404, detail="History entry not found")
+        
+        return {
+            "success": True,
+            "entry": entry
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Get history entry error: {e}")
+        raise HTTPException(status_code=500, detail=f"Error fetching history entry: {str(e)}")
+
+@app.delete("/history/{entry_id}")
+async def delete_history_entry(
+    entry_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Delete a history entry"""
+    try:
+        success = db.delete_history_entry(current_user["user_id"], entry_id)
+        
+        if not success:
+            raise HTTPException(status_code=404, detail="Entry not found or already deleted")
+        
+        return {
+            "success": True,
+            "message": "History entry deleted successfully"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Delete history error: {e}")
+        raise HTTPException(status_code=500, detail=f"Error deleting history: {str(e)}")
+
+@app.delete("/history")
+async def clear_all_history(current_user: dict = Depends(get_current_user)):
+    """Clear all user history"""
+    try:
+        if not current_user["user_id"]:
+            raise HTTPException(status_code=401, detail="Unauthorized")
+        
+        success = db.clear_user_history(current_user["user_id"])
+        
+        return {
+            "success": success,
+            "message": "All history cleared successfully" if success else "Failed to clear history"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Clear history error: {e}")
+        raise HTTPException(status_code=500, detail=f"Error clearing history: {str(e)}")
+
+# ========== STATISTICS ENDPOINTS ==========
+@app.get("/stats")
+async def get_user_stats(current_user: dict = Depends(get_current_user)):
+    """Get user statistics"""
+    try:
+        stats = db.get_history_stats(current_user["user_id"])
+        
+        return {
+            "success": True,
+            "stats": stats,
+            "user_id": current_user["user_id"]
+        }
+        
+    except Exception as e:
+        print(f"❌ Get stats error: {e}")
+        raise HTTPException(status_code=500, detail=f"Error fetching stats: {str(e)}")
+
+@app.get("/stats/daily")
+async def get_daily_stats(
+    days: int = Query(7, ge=1, le=30),
+    current_user: dict = Depends(get_current_user)
+):
+    """Get daily statistics"""
+    try:
+        # This would be implemented with proper date filtering in Supabase
+        # For now, return mock data
+        history = db.get_user_history(current_user["user_id"], limit=100)
+        
+        # Group by date
+        daily_stats = {}
+        for entry in history:
+            date = entry["timestamp"][:10]  # YYYY-MM-DD
+            if date not in daily_stats:
+                daily_stats[date] = {"count": 0, "healthy": 0, "diseases": {}}
+            
+            daily_stats[date]["count"] += 1
+            if "healthy" in entry["prediction"].lower():
+                daily_stats[date]["healthy"] += 1
+            else:
+                disease = entry["prediction"]
+                daily_stats[date]["diseases"][disease] = daily_stats[date]["diseases"].get(disease, 0) + 1
+        
+        # Convert to list and sort by date
+        daily_list = [
+            {"date": date, **stats}
+            for date, stats in sorted(daily_stats.items(), reverse=True)[:days]
+        ]
+        
+        return {
+            "success": True,
+            "daily_stats": daily_list,
+            "days": len(daily_list)
+        }
+        
+    except Exception as e:
+        print(f"❌ Get daily stats error: {e}")
+        raise HTTPException(status_code=500, detail=f"Error fetching daily stats: {str(e)}")
+
+# ========== SEARCH ENDPOINTS ==========
+@app.get("/search")
+async def search_history(
+    query: str = Query(..., min_length=2),
+    limit: int = Query(20, ge=1, le=50),
+    current_user: dict = Depends(get_current_user)
+):
+    """Search in user's history"""
+    try:
+        results = db.search_history(current_user["user_id"], query, limit)
+        
+        return {
+            "success": True,
+            "query": query,
+            "results": results,
+            "count": len(results)
+        }
+        
+    except Exception as e:
+        print(f"❌ Search error: {e}")
+        raise HTTPException(status_code=500, detail=f"Search error: {str(e)}")
+
+# ========== EXPORT ENDPOINTS ==========
+@app.get("/export/history")
+async def export_history(
+    format: str = Query("json", regex="^(json|csv)$"),
+    current_user: dict = Depends(get_current_user)
+):
+    """Export user history"""
+    try:
+        history = db.get_user_history(current_user["user_id"], limit=1000)
+        
+        if format == "csv":
+            # Generate CSV
+            import csv
+            import io
+            
+            output = io.StringIO()
+            writer = csv.DictWriter(output, fieldnames=[
+                "timestamp", "prediction", "confidence", "image_name", "model_type", "symptoms"
+            ])
+            
+            writer.writeheader()
+            for entry in history:
+                writer.writerow({
+                    "timestamp": entry["timestamp"],
+                    "prediction": entry["prediction"],
+                    "confidence": entry["confidence"],
+                    "image_name": entry["image_name"],
+                    "model_type": entry.get("model_type", "unknown"),
+                    "symptoms": ", ".join(entry.get("symptoms", []))
+                })
+            
+            csv_content = output.getvalue()
+            
+            return {
+                "success": True,
+                "format": "csv",
+                "data": csv_content,
+                "count": len(history)
+            }
+        else:
+            # JSON format
+            return {
+                "success": True,
+                "format": "json",
+                "data": history,
+                "count": len(history)
+            }
+        
+    except Exception as e:
+        print(f"❌ Export error: {e}")
+        raise HTTPException(status_code=500, detail=f"Export error: {str(e)}")
 
 # ========== STARTUP MESSAGE ==========
 print("\n" + "=" * 60)
-print("🐟 HEALTHYFINS API v4.0 - COMPATIBILITY FIX")
+print("🐟 HEALTHYFINS API v5.0 - SUPABASE INTEGRATION")
 print("=" * 60)
 print(f"📡 Backend URL: https://healthyfins.onrender.com")
 print(f"🌐 Frontend URL: https://healthy-fins.vercel.app")
+print(f"💾 Database: {'Supabase' if db.supabase else 'Local JSON'}")
+print(f"🔧 Hardware IDs: {len(db.get_hardware_ids())} available")
 print("=" * 60)
 
 if __name__ == "__main__":
