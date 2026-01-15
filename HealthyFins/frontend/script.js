@@ -444,104 +444,109 @@ function displayResults(result) {
 
 function updateTreatmentText(disease, confidence, modelType = 'ai_model') {
     // Kerala Fish Health Helplines
-    
+    const keralaHelplines = 
+        '\n\n📞 **KERALA FISH HEALTH EMERGENCY CONTACTS:**\n' +
+        '• **KFHA Helpline:** +91-471-2318034\n' +
+        '• **Aquatic Disease Diagnostic Lab:** +91-487-2300291\n' +
+        '• **Kerala University of Fisheries:** +91-484-2381434\n' +
+        '• **Emergency Vet (24/7):** +91-9895-430-210';
     
     const treatments = {
         // ==================== HEALTHY ====================
-        'healthy': '✅ HEALTHY FISH - DIAGNOSIS CONFIRMED\n\n' +
-                  '📋 MAINTENANCE CHECKLIST:\n\n' +
-                  '1️⃣ Weekly Water Changes - 20-25% volume replacement\n' +
-                  '2️⃣ Optimal Temperature - Maintain 24-28°C range\n' +
-                  '3️⃣ pH Balance - Keep between 6.5-8.0\n' +
-                  '4️⃣ Quality Feeding - Balanced diet, avoid overfeeding\n' +
-                  '5️⃣ Regular Monitoring - Daily behavior observation\n' +
-                  '6️⃣ Quarantine Protocol - 2 weeks for new additions\n' +
-                  '7️⃣ Filter Maintenance - Clean monthly, never replace all media\n\n' +
-                  '🎯 Prevention is always better than cure! + keralaHelplines,
+        'healthy': '✅ **HEALTHY FISH - DIAGNOSIS CONFIRMED**\n\n' +
+                  '📋 **MAINTENANCE CHECKLIST:**\n\n' +
+                  '1️⃣ **Weekly Water Changes** - 20-25% volume replacement\n' +
+                  '2️⃣ **Optimal Temperature** - Maintain 24-28°C range\n' +
+                  '3️⃣ **pH Balance** - Keep between 6.5-8.0\n' +
+                  '4️⃣ **Quality Feeding** - Balanced diet, avoid overfeeding\n' +
+                  '5️⃣ **Regular Monitoring** - Daily behavior observation\n' +
+                  '6️⃣ **Quarantine Protocol** - 2 weeks for new additions\n' +
+                  '7️⃣ **Filter Maintenance** - Clean monthly, never replace all media\n\n' +
+                  '🎯 **Prevention is always better than cure!**' + keralaHelplines,
         
         // ==================== BACTERIAL RED DISEASE ====================
-        'bacterial red disease': '🚨 BACTERIAL RED DISEASE - CRITICAL ALERT\n\n' +
-                                '🩺 IMMEDIATE ACTION REQUIRED:\n\n' +
-                                '1️⃣ Antibiotic Treatment - Kanaplex/Maracyn for 7-10 days\n' +
-                                '2️⃣ Salt Therapy - 1 tbsp per 20L, dissolve completely\n' +
-                                '3️⃣ Emergency Water Change - 50% immediately\n' +
-                                '4️⃣ Isolation Protocol - Hospital tank setup mandatory\n' +
-                                '5️⃣ Aeration Boost - Maximum oxygen supply\n' +
-                                '6️⃣ Parameter Testing - Daily ammonia/nitrite checks\n' +
-                                '7️⃣ Vet Consultation - Required within 48 hours\n\n' +
-                                '⚠️ Contagious - Isolate immediately!' + keralaHelplines,
+        'bacterial red disease': '🚨 **BACTERIAL RED DISEASE - CRITICAL ALERT**\n\n' +
+                                '🩺 **IMMEDIATE ACTION REQUIRED:**\n\n' +
+                                '1️⃣ **Antibiotic Treatment** - Kanaplex/Maracyn for 7-10 days\n' +
+                                '2️⃣ **Salt Therapy** - 1 tbsp per 20L, dissolve completely\n' +
+                                '3️⃣ **Emergency Water Change** - 50% immediately\n' +
+                                '4️⃣ **Isolation Protocol** - Hospital tank setup mandatory\n' +
+                                '5️⃣ **Aeration Boost** - Maximum oxygen supply\n' +
+                                '6️⃣ **Parameter Testing** - Daily ammonia/nitrite checks\n' +
+                                '7️⃣ **Vet Consultation** - Required within 48 hours\n\n' +
+                                '⚠️ **Contagious - Isolate immediately!**' + keralaHelplines,
         
         // ==================== PARASITIC DISEASES ====================
-        'parasitic diseases': '⚠️ PARASITIC INFECTION DETECTED\n\n' +
-                             '🦠 TREATMENT PROTOCOL:\n\n' +
-                             '1️⃣ Anti-parasitic Meds - Praziquantel for 10-14 days\n' +
-                             '2️⃣ Salt Baths - 3% solution for 5-10 minutes daily\n' +
-                             '3️⃣ Temperature Increase - Raise to 30°C gradually\n' +
-                             '4️⃣ Tank Vacuuming - Deep clean substrate thoroughly\n' +
-                             '5️⃣ Filter Cleaning - Replace/clean all media\n' +
-                             '6️⃣ Repeat Treatment - Second dose after 7 days\n' +
-                             '7️⃣ Monitor Behavior - Watch for flashing/rubbing\n\n' +
-                             '🔄 Lifecycle breaks in 7 days - repeat essential' + keralaHelplines,
+        'parasitic diseases': '⚠️ **PARASITIC INFECTION DETECTED**\n\n' +
+                             '🦠 **TREATMENT PROTOCOL:**\n\n' +
+                             '1️⃣ **Anti-parasitic Meds** - Praziquantel for 10-14 days\n' +
+                             '2️⃣ **Salt Baths** - 3% solution for 5-10 minutes daily\n' +
+                             '3️⃣ **Temperature Increase** - Raise to 30°C gradually\n' +
+                             '4️⃣ **Tank Vacuuming** - Deep clean substrate thoroughly\n' +
+                             '5️⃣ **Filter Cleaning** - Replace/clean all media\n' +
+                             '6️⃣ **Repeat Treatment** - Second dose after 7 days\n' +
+                             '7️⃣ **Monitor Behavior** - Watch for flashing/rubbing\n\n' +
+                             '🔄 **Lifecycle breaks in 7 days - repeat essential**' + keralaHelplines,
         
         // ==================== VIRAL DISEASES WHITE TAIL DISEASE ====================
-        'viral diseases white tail disease': '🚨 VIRAL WHITE TAIL DISEASE**\n\n' +
-                                            '🏥 SUPPORTIVE CARE PROTOCOL:**\n\n' +
-                                            '1️⃣ Water Perfection** - Zero ammonia/nitrite mandatory\n' +
-                                            '2️⃣ Immune Boosters** - Vitamin C supplements added\n' +
-                                            '3️⃣ Temperature Control** - Maintain steady 26-28°C\n' +
-                                            '4️⃣ Salt Support** - 1 tsp per 4L for gill function\n' +
-                                            '5️⃣ Stress Reduction** - Dim lights, minimize handling\n' +
-                                            '6️⃣ Secondary Prevention** - Watch for bacterial/fungal\n' +
-                                            '7️⃣ Nutrition Focus** - High-quality vitamin-rich food\n\n' +
-                                            '⚠️ No direct antiviral treatment - supportive care only' + keralaHelplines,
+        'viral diseases white tail disease': '🚨 **VIRAL WHITE TAIL DISEASE**\n\n' +
+                                            '🏥 **SUPPORTIVE CARE PROTOCOL:**\n\n' +
+                                            '1️⃣ **Water Perfection** - Zero ammonia/nitrite mandatory\n' +
+                                            '2️⃣ **Immune Boosters** - Vitamin C supplements added\n' +
+                                            '3️⃣ **Temperature Control** - Maintain steady 26-28°C\n' +
+                                            '4️⃣ **Salt Support** - 1 tsp per 4L for gill function\n' +
+                                            '5️⃣ **Stress Reduction** - Dim lights, minimize handling\n' +
+                                            '6️⃣ **Secondary Prevention** - Watch for bacterial/fungal\n' +
+                                            '7️⃣ **Nutrition Focus** - High-quality vitamin-rich food\n\n' +
+                                            '⚠️ **No direct antiviral treatment - supportive care only**' + keralaHelplines,
         
         // ==================== FUNGAL DISEASES SAPROLEGNIASIS ====================
-        'fungal diseases saprolegniasis': '⚠️ FUNGAL INFECTION (SAPROLEGNIASIS)\n\n' +
-                                         '🍄 TREATMENT PLAN:\n\n' +
-                                         '1️⃣ Antifungal Medication - Methylene Blue baths\n' +
-                                         '2️⃣ Salt Treatment - 1 tbsp per 20L tank water\n' +
-                                         '3️⃣ Wound Management - Remove dead tissue carefully\n' +
-                                         '4️⃣ Filtration Upgrade - Increase mechanical filtration\n' +
-                                         '5️⃣ Organic Reduction - Vacuum waste daily\n' +
-                                         '6️⃣ Temperature Adjustment - Increase to 28°C\n' +
-                                         '7️⃣ Medication Duration - Continue for 7-10 days\n\n' +
-                                         '🌡️ Warm water inhibits fungal growth + keralaHelplines,
+        'fungal diseases saprolegniasis': '⚠️ **FUNGAL INFECTION (SAPROLEGNIASIS)**\n\n' +
+                                         '🍄 **TREATMENT PLAN:**\n\n' +
+                                         '1️⃣ **Antifungal Medication** - Methylene Blue baths\n' +
+                                         '2️⃣ **Salt Treatment** - 1 tbsp per 20L tank water\n' +
+                                         '3️⃣ **Wound Management** - Remove dead tissue carefully\n' +
+                                         '4️⃣ **Filtration Upgrade** - Increase mechanical filtration\n' +
+                                         '5️⃣ **Organic Reduction** - Vacuum waste daily\n' +
+                                         '6️⃣ **Temperature Adjustment** - Increase to 28°C\n' +
+                                         '7️⃣ **Medication Duration** - Continue for 7-10 days\n\n' +
+                                         '🌡️ **Warm water inhibits fungal growth**' + keralaHelplines,
         
         // ==================== BACTERIAL DISEASES - AEROMONIASIS ====================
-        'bacterial diseases - aeromoniasis': '🚨 AEROMONIASIS - EMERGENCY**\n\n' +
-                                            '🏥 CRITICAL CARE PROTOCOL:**\n\n' +
-                                            '1️⃣ Immediate Isolation** - Hospital tank NOW\n' +
-                                            '2️⃣ Prescription Antibiotics** - Kanamycin/Enrofloxacin\n' +
-                                            '3️⃣ Bare Tank Setup** - No substrate for easy cleaning\n' +
-                                            '4️⃣ Daily Water Changes** - 50% minimum daily\n' +
-                                            '5️⃣ Main Tank Disinfection** - Bleach solution required\n' +
-                                            '6️⃣ Equipment Sterilization** - All tools must be sterilized\n' +
-                                            '7️⃣ Veterinary Emergency** - Immediate consultation needed\n\n' +
-                                            '⚠️ HIGHLY CONTAGIOUS - Complete isolation required**' + keralaHelplines,
+        'bacterial diseases - aeromoniasis': '🚨 **AEROMONIASIS - EMERGENCY**\n\n' +
+                                            '🏥 **CRITICAL CARE PROTOCOL:**\n\n' +
+                                            '1️⃣ **Immediate Isolation** - Hospital tank NOW\n' +
+                                            '2️⃣ **Prescription Antibiotics** - Kanamycin/Enrofloxacin\n' +
+                                            '3️⃣ **Bare Tank Setup** - No substrate for easy cleaning\n' +
+                                            '4️⃣ **Daily Water Changes** - 50% minimum daily\n' +
+                                            '5️⃣ **Main Tank Disinfection** - Bleach solution required\n' +
+                                            '6️⃣ **Equipment Sterilization** - All tools must be sterilized\n' +
+                                            '7️⃣ **Veterinary Emergency** - Immediate consultation needed\n\n' +
+                                            '⚠️ **HIGHLY CONTAGIOUS - Complete isolation required**' + keralaHelplines,
         
         // ==================== BACTERIAL GILL DISEASE ====================
-        'bacterial gill disease': '⚠️ BACTERIAL GILL DISEASE\n\n' +
-                                  '🩺 RESPIRATORY TREATMENT:\n\n' +
-                                  '1️⃣ Antibiotic Food - Oxytetracycline 50mg/kg daily\n' +
-                                  '2️⃣ Oxygen Maximization - Add multiple air stones\n' +
-                                  '3️⃣ Water Level Reduction - Increase surface agitation\n' +
-                                  '4️⃣ Ammonia Control - Must maintain ZERO ppm\n' +
-                                  '5️⃣ Salt Baths - 2-3g/L for 30 minutes daily\n' +
-                                  '6️⃣ Stocking Reduction - Decrease fish density immediately\n' +
-                                  '7️⃣ Water Changes - 30% daily until improvement\n\n' +
-                                  '💨 Oxygen is critical - maximize aeration + keralaHelplines,
+        'bacterial gill disease': '⚠️ **BACTERIAL GILL DISEASE**\n\n' +
+                                  '🩺 **RESPIRATORY TREATMENT:**\n\n' +
+                                  '1️⃣ **Antibiotic Food** - Oxytetracycline 50mg/kg daily\n' +
+                                  '2️⃣ **Oxygen Maximization** - Add multiple air stones\n' +
+                                  '3️⃣ **Water Level Reduction** - Increase surface agitation\n' +
+                                  '4️⃣ **Ammonia Control** - Must maintain ZERO ppm\n' +
+                                  '5️⃣ **Salt Baths** - 2-3g/L for 30 minutes daily\n' +
+                                  '6️⃣ **Stocking Reduction** - Decrease fish density immediately\n' +
+                                  '7️⃣ **Water Changes** - 30% daily until improvement\n\n' +
+                                  '💨 **Oxygen is critical - maximize aeration**' + keralaHelplines,
         
         // ==================== EUS ULCERATIVE SYNDROME ====================
-        'eus_ulcerative_syndrome (arg)': '🚨 EUS - EPIZOOTIC ULCERATIVE SYNDROME**\n\n' +
-                                         '🏥 COMPREHENSIVE TREATMENT:**\n\n' +
-                                         '1️⃣ Combination Therapy - Antibiotics + Antifungals\n' +
-                                         '2️⃣ Wound Cleaning - Hydrogen peroxide 3% on ulcers\n' +
-                                         '3️⃣ pH Management - Maintain above 7.0 at all times\n' +
-                                         '4️⃣ Potassium Permanganate - Medicated baths\n' +
-                                         '5️⃣ Nutrition Support - High-protein, vitamin-rich food\n' +
-                                         '6️⃣ Hardness Increase - Raise water hardness\n' +
-                                         '7️⃣ Extended Treatment - Minimum 14-day protocol\n\n' +
-                                         '⚠️ REQUIRES PROFESSIONAL VETERINARY MANAGEMENT + keralaHelplines
+        'eus_ulcerative_syndrome (arg)': '🚨 **EUS - EPIZOOTIC ULCERATIVE SYNDROME**\n\n' +
+                                         '🏥 **COMPREHENSIVE TREATMENT:**\n\n' +
+                                         '1️⃣ **Combination Therapy** - Antibiotics + Antifungals\n' +
+                                         '2️⃣ **Wound Cleaning** - Hydrogen peroxide 3% on ulcers\n' +
+                                         '3️⃣ **pH Management** - Maintain above 7.0 at all times\n' +
+                                         '4️⃣ **Potassium Permanganate** - Medicated baths\n' +
+                                         '5️⃣ **Nutrition Support** - High-protein, vitamin-rich food\n' +
+                                         '6️⃣ **Hardness Increase** - Raise water hardness\n' +
+                                         '7️⃣ **Extended Treatment** - Minimum 14-day protocol\n\n' +
+                                         '⚠️ **REQUIRES PROFESSIONAL VETERINARY MANAGEMENT**' + keralaHelplines
     };
     
     let treatment = treatments['healthy'];
@@ -570,25 +575,25 @@ function updateTreatmentText(disease, confidence, modelType = 'ai_model') {
     
     // Add confidence warning if low
     if (confidence < 70) {
-        treatment = '⚠️ LOW CONFIDENCE ALERT** (' + confidence + '%)\n\n' + 
-                   '🔍 RECOMMENDED ACTIONS:\n\n' +
-                   '1️⃣ Retake Photos - Clear, well-lit images from multiple angles\n' +
-                   '2️⃣ Symptom Checklist - Note all observable symptoms\n' +
-                   '3️⃣ Water Testing - Complete parameter test immediately\n' +
-                   '4️⃣ Behavior Log - Record swimming/eating patterns\n' +
-                   '5️⃣ Professional Consult - Contact helpline below\n\n' +
+        treatment = '⚠️ **LOW CONFIDENCE ALERT** (' + confidence + '%)\n\n' + 
+                   '🔍 **RECOMMENDED ACTIONS:**\n\n' +
+                   '1️⃣ **Retake Photos** - Clear, well-lit images from multiple angles\n' +
+                   '2️⃣ **Symptom Checklist** - Note all observable symptoms\n' +
+                   '3️⃣ **Water Testing** - Complete parameter test immediately\n' +
+                   '4️⃣ **Behavior Log** - Record swimming/eating patterns\n' +
+                   '5️⃣ **Professional Consult** - Contact helpline below\n\n' +
                    '---\n\n' + treatment;
     }
     
     // Add model type note
     if (modelType !== 'ai_model') {
-        treatment = '🔬 INTELLIGENT ANALYSIS MODE\n\n' +
-                   'ℹ️ System Status: AI model currently unavailable\n\n' +
-                   '📋 For better accuracy:\n\n' +
-                   '1️⃣ Use clear photos - Good lighting, multiple angles\n' +
-                   '2️⃣ Check backend status - Ensure AI model is loaded\n' +
-                   '3️⃣ Consider manual diagnosis - Use helpline consultation\n' +
-                   '4️⃣ Monitor symptoms - Keep detailed observations\n\n' +
+        treatment = '🔬 **INTELLIGENT ANALYSIS MODE**\n\n' +
+                   'ℹ️ **System Status:** AI model currently unavailable\n\n' +
+                   '📋 **For better accuracy:**\n\n' +
+                   '1️⃣ **Use clear photos** - Good lighting, multiple angles\n' +
+                   '2️⃣ **Check backend status** - Ensure AI model is loaded\n' +
+                   '3️⃣ **Consider manual diagnosis** - Use helpline consultation\n' +
+                   '4️⃣ **Monitor symptoms** - Keep detailed observations\n\n' +
                    '---\n\n' + treatment;
     }
     
