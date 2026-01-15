@@ -929,4 +929,3 @@ function addGlobalStyles() {
 
 // Add global styles
 addGlobalStyles();
-
