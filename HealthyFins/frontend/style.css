@@ -758,3 +758,114 @@ footer {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
+
+/* Treatment Box Styling */
+.treatment-box {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9f7fe 100%);
+    border-radius: 12px;
+    padding: 20px;
+    margin: 20px 0;
+    border-left: 5px solid #2c8c99;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+
+.treatment-box h4 {
+    color: #1a5f6b;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.treatment-points {
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    margin: 15px 0;
+}
+
+.treatment-point {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 10px;
+    padding: 8px 0;
+    border-bottom: 1px dashed #e0e0e0;
+}
+
+.treatment-point:last-child {
+    border-bottom: none;
+}
+
+.point-number {
+    background: #2c8c99;
+    color: white;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    margin-right: 12px;
+    flex-shrink: 0;
+}
+
+.point-text {
+    flex: 1;
+    color: #333;
+    line-height: 1.5;
+}
+
+.helpline-section {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 20px;
+}
+
+.helpline-section h5 {
+    color: #856404;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.helpline-number {
+    background: white;
+    padding: 10px 15px;
+    border-radius: 6px;
+    margin: 5px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.3s;
+}
+
+.helpline-number:hover {
+    background: #f8f9fa;
+    transform: translateX(5px);
+}
+
+.helpline-number i {
+    color: #27ae60;
+}
+
+.confidence-warning {
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.analysis-mode {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    color: #856404;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
