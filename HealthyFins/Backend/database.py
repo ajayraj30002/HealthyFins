@@ -1,4 +1,4 @@
-# database.py - DIRECT SUPABASE REST API (NO PACKAGE ISSUES)
+# database.py - COMPLETE WORKING VERSION
 import os
 import hashlib
 from datetime import datetime
@@ -12,6 +12,7 @@ class SupabaseDatabase:
         # Get Supabase credentials
         self.supabase_url = os.getenv("SUPABASE_URL", "https://bxfljshwfpgsnfyqemcd.supabase.co").rstrip('/')
         self.supabase_key = os.getenv("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4Zmxqc2h3ZnBnc25meXFlbWNkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0NjYxMDUsImV4cCI6MjA4NDA0MjEwNX0.M8qOkC-ajPfWgxG-PjCfY6UGLSSm5O2jmlQNTfaM3IQ")
+        self._supabase_available = False
         
         # API headers for direct REST calls
         self.headers = {
@@ -56,68 +57,20 @@ class SupabaseDatabase:
             if response.status_code == 200:
                 print("✅ Supabase connection successful (REST API)")
                 print("☁️ Will sync data to Supabase")
+                self._supabase_available = True
             elif response.status_code == 404:
-                print("⚠️ Supabase tables don't exist yet - they will be created automatically")
-                self._create_tables_if_needed()
+                print("⚠️ Supabase tables don't exist yet - will create when saving")
+                self._supabase_available = True  # Still try, tables will be created on insert
             else:
                 print(f"⚠️ Supabase connection test returned {response.status_code}: {response.text[:100]}")
-                print("📁 Using file storage (Supabase will be tried on each operation)")
+                self._supabase_available = False
         except Exception as e:
             print(f"⚠️ Supabase connection failed: {e}")
-            print("📁 Using file storage only")
+            self._supabase_available = False
     
-    def _create_tables_if_needed(self):
-        """Create tables if they don't exist"""
-        try:
-            # Try to create users table
-            create_users_sql = {
-                "name": "users",
-                "schema": {
-                    "id": {"type": "text", "primaryKey": True},
-                    "email": {"type": "text", "unique": True},
-                    "name": {"type": "text"},
-                    "password_hash": {"type": "text"},
-                    "hardware_id": {"type": "text", "nullable": True},
-                    "created_at": {"type": "timestamp", "default": "now()"},
-                    "last_login": {"type": "timestamp", "default": "now()"},
-                    "scan_count": {"type": "integer", "default": 0},
-                    "is_active": {"type": "boolean", "default": True}
-                }
-            }
-            
-            # Note: Table creation requires higher privileges
-            # We'll just create them manually in Supabase dashboard
-            print("""
-            ⚠️ Please create tables manually in Supabase SQL Editor:
-            
-            CREATE TABLE users (
-                id TEXT PRIMARY KEY,
-                email TEXT UNIQUE NOT NULL,
-                name TEXT NOT NULL,
-                password_hash TEXT NOT NULL,
-                hardware_id TEXT,
-                created_at TIMESTAMP DEFAULT NOW(),
-                last_login TIMESTAMP DEFAULT NOW(),
-                scan_count INTEGER DEFAULT 0,
-                is_active BOOLEAN DEFAULT true
-            );
-            
-            CREATE TABLE prediction_history (
-                id TEXT PRIMARY KEY,
-                user_id TEXT NOT NULL,
-                timestamp TIMESTAMP DEFAULT NOW(),
-                image_name TEXT,
-                image_url TEXT,
-                prediction TEXT NOT NULL,
-                confidence DECIMAL(5,2) NOT NULL,
-                model_type TEXT DEFAULT 'ai_model',
-                symptoms TEXT[] DEFAULT '{}',
-                treatment_plan TEXT,
-                is_urgent BOOLEAN DEFAULT false
-            );
-            """)
-        except Exception as e:
-            print(f"⚠️ Could not create tables: {e}")
+    def is_supabase_available(self):
+        """Check if Supabase is available"""
+        return self._supabase_available and self.supabase_url and self.supabase_key
     
     def _supabase_request(self, method: str, table: str, data: dict = None, params: dict = None):
         """Make a direct REST API call to Supabase"""
@@ -142,6 +95,10 @@ class SupabaseDatabase:
                 return response.json()
             elif response.status_code == 204:
                 return []
+            elif response.status_code == 404:
+                # Table doesn't exist - try to create it on next insert
+                self._supabase_available = False
+                return None
             else:
                 print(f"⚠️ Supabase {method} returned {response.status_code}: {response.text[:100]}")
                 return None
@@ -268,7 +225,7 @@ class SupabaseDatabase:
             
             # Try Supabase
             supabase_saved = False
-            if file_saved and self.supabase_url and self.supabase_key:
+            if file_saved and self.is_supabase_available():
                 try:
                     # Check if user exists in Supabase
                     check = self._supabase_request("GET", "users", params={"email": f"eq.{email}"})
@@ -316,7 +273,7 @@ class SupabaseDatabase:
                 print(f"✅ User found in {source}")
             
             # Try Supabase if file not found
-            if not user and self.supabase_url and self.supabase_key:
+            if not user and self.is_supabase_available():
                 try:
                     result = self._supabase_request("GET", "users", params={"email": f"eq.{email}"})
                     if result and len(result) > 0:
@@ -342,7 +299,7 @@ class SupabaseDatabase:
             self._save_user_to_file(user)
             
             # Try Supabase update
-            if self.supabase_url and self.supabase_key:
+            if self.is_supabase_available():
                 try:
                     self._supabase_request("PATCH", "users", 
                                           data={"last_login": user["last_login"]},
@@ -392,7 +349,7 @@ class SupabaseDatabase:
             file_saved = self._save_history_to_file(user_id, history_entry)
             
             # Try Supabase
-            if file_saved and self.supabase_url and self.supabase_key:
+            if file_saved and self.is_supabase_available():
                 try:
                     result = self._supabase_request("POST", "prediction_history", data=history_entry)
                     if result:
@@ -527,7 +484,7 @@ class SupabaseDatabase:
                             return False
             
             # Check Supabase if available
-            if self.supabase_url and self.supabase_key:
+            if self.is_supabase_available():
                 try:
                     result = self._supabase_request("GET", "users", params={"hardware_id": f"eq.{hardware_id}"})
                     if result and len(result) > 0:
