@@ -20,51 +20,51 @@ class SupabaseDatabase:
             "HYDROPRO-201", "HYDROPRO-202"
         ]
         
-        print(f"🔧 Supabase URL: {self.supabase_url[:30]}...")
-        print(f"🔧 Supabase Key: {self.supabase_key[:10]}...")
+        print("=" * 60)
+        print("🐟 HEALTHYFINS DATABASE INITIALIZATION")
+        print("=" * 60)
+        
+        if not self.supabase_url or not self.supabase_key:
+            print("❌ CRITICAL: Supabase credentials missing!")
+            print("Please set SUPABASE_URL and SUPABASE_KEY in Render environment variables")
+            raise ValueError("Database configuration missing")
         
         try:
-            # CORRECT CLIENT CREATION for supabase 2.4.0
-            if self.supabase_url and self.supabase_key:
-                self.supabase = supabase.create_client(self.supabase_url, self.supabase_key)
-                print("✅ Connected to Supabase")
-                # Test connection
-                test = self.supabase.table("users").select("count", count="exact").execute()
-                print(f"✅ Database test successful: {test.count} rows in users table")
-            else:
-                print("⚠️ Supabase credentials missing, using local database")
-                self.supabase = None
-                self.local_data = {"users": {}, "history": {}}
-                
+            print(f"🔗 Connecting to Supabase...")
+            self.supabase = supabase.create_client(self.supabase_url, self.supabase_key)
+            
+            # Test connection
+            test_result = self.supabase.table("users").select("*", count="exact").limit(1).execute()
+            print(f"✅ Supabase connection successful")
+            print(f"📊 Current users in database: {test_result.count}")
+            
         except Exception as e:
-            print(f"❌ Supabase connection failed: {e}")
-            self.supabase = None
-            # Fallback to local JSON storage
-            self.local_data = {"users": {}, "history": {}}
+            print(f"❌ FATAL: Cannot connect to Supabase: {e}")
+            raise e
+        
+        print("=" * 60)
     
     # ========== USER MANAGEMENT ==========
     
     def create_user(self, email: str, password: str, name: str, hardware_id: Optional[str] = None) -> tuple:
-        """Create a new user with validation"""
+        """Create a new user with validation - ALWAYS saves to Supabase"""
         try:
+            print(f"📝 Attempting to create user: {email}")
+            
             # Validate hardware_id if provided
             if hardware_id and hardware_id not in self.VALID_HARDWARE_IDS:
                 return False, f"Invalid hardware ID. Must be one of: {', '.join(self.VALID_HARDWARE_IDS[:3])}..."
             
             # Check if hardware_id is already in use
-            if hardware_id and self.supabase:
+            if hardware_id:
                 existing_hw = self.supabase.table("users").select("*").eq("hardware_id", hardware_id).execute()
                 if existing_hw.data:
                     return False, "Hardware ID already registered to another user"
             
             # Check if email already exists
-            if self.supabase:
-                existing = self.supabase.table("users").select("*").eq("email", email).execute()
-                if existing.data:
-                    return False, "Email already registered"
-            else:
-                if email in self.local_data["users"]:
-                    return False, "Email already registered"
+            existing = self.supabase.table("users").select("*").eq("email", email).execute()
+            if existing.data:
+                return False, "Email already registered"
             
             # Hash password
             password_hash = hashlib.sha256(password.encode()).hexdigest()
@@ -82,49 +82,47 @@ class SupabaseDatabase:
                 "is_active": True
             }
             
-            # Save to database
-            if self.supabase:
-                result = self.supabase.table("users").insert(user_data).execute()
-                print(f"✅ User created in Supabase: {email}")
-            else:
-                # Local fallback
-                self.local_data["users"][email] = user_data
-                self.local_data["history"][user_id] = []
-                print(f"✅ User created locally: {email}")
+            # Save to Supabase - THIS IS THE CRITICAL PART
+            print(f"💾 Saving user to Supabase: {email}")
+            result = self.supabase.table("users").insert(user_data).execute()
             
-            return True, {
-                "user_id": user_id,
-                "email": email,
-                "name": name,
-                "hardware_id": hardware_id,
-                "created_at": user_data["created_at"]
-            }
+            if result.data:
+                print(f"✅ User created successfully in Supabase: {email}")
+                return True, {
+                    "user_id": user_id,
+                    "email": email,
+                    "name": name,
+                    "hardware_id": hardware_id,
+                    "created_at": user_data["created_at"]
+                }
+            else:
+                print(f"❌ Failed to insert user into Supabase: {email}")
+                return False, "Failed to save user to database"
             
         except Exception as e:
             print(f"❌ Create user error: {e}")
             return False, f"Registration failed: {str(e)}"
     
     def authenticate_user(self, email: str, password: str) -> tuple:
-        """Authenticate user login"""
+        """Authenticate user login - ALWAYS checks Supabase"""
         try:
+            print(f"🔐 Authenticating user: {email}")
+            
             # Hash the provided password
             password_hash = hashlib.sha256(password.encode()).hexdigest()
             
-            # Query database
-            if self.supabase:
-                result = self.supabase.table("users").select("*").eq("email", email).execute()
-                if not result.data:
-                    return False, "Invalid email or password"
-                
-                user = result.data[0]
-            else:
-                # Local fallback
-                if email not in self.local_data["users"]:
-                    return False, "Invalid email or password"
-                user = self.local_data["users"][email]
+            # ALWAYS query Supabase
+            result = self.supabase.table("users").select("*").eq("email", email).execute()
+            
+            if not result.data:
+                print(f"❌ User not found: {email}")
+                return False, "Invalid email or password"
+            
+            user = result.data[0]
             
             # Verify password
             if user.get("password_hash") != password_hash:
+                print(f"❌ Invalid password for: {email}")
                 return False, "Invalid email or password"
             
             # Check if user is active
@@ -133,10 +131,9 @@ class SupabaseDatabase:
             
             # Update last login
             update_data = {"last_login": datetime.now().isoformat()}
-            if self.supabase:
-                self.supabase.table("users").update(update_data).eq("id", user["id"]).execute()
-            else:
-                user["last_login"] = update_data["last_login"]
+            self.supabase.table("users").update(update_data).eq("id", user["id"]).execute()
+            
+            print(f"✅ User authenticated: {email}")
             
             return True, {
                 "user_id": user["id"],
@@ -159,7 +156,7 @@ class SupabaseDatabase:
                               image_url: Optional[str] = None,
                               symptoms: Optional[List[str]] = None,
                               model_type: str = "ai_model") -> bool:
-        """Add a prediction to user's history"""
+        """Add a prediction to user's history - ALWAYS saves to Supabase"""
         try:
             # Generate unique ID
             entry_id = f"{user_id}_{int(datetime.now().timestamp() * 1000)}"
@@ -178,11 +175,11 @@ class SupabaseDatabase:
                 "is_urgent": confidence > 70 and "healthy" not in prediction.lower()
             }
             
-            # Save to database
-            if self.supabase:
-                # Add to history table
-                result = self.supabase.table("prediction_history").insert(history_entry).execute()
-                
+            # ALWAYS save to Supabase
+            print(f"💾 Saving prediction to Supabase for user {user_id}")
+            result = self.supabase.table("prediction_history").insert(history_entry).execute()
+            
+            if result.data:
                 # Update user's scan count
                 user_data = self.supabase.table("users").select("scan_count").eq("id", user_id).execute()
                 if user_data.data:
@@ -192,16 +189,12 @@ class SupabaseDatabase:
                         "scan_count": new_count,
                         "last_scan": history_entry["timestamp"]
                     }).eq("id", user_id).execute()
-                    
+                
                 print(f"✅ History saved to Supabase: {entry_id}")
+                return True
             else:
-                # Local fallback
-                if user_id not in self.local_data["history"]:
-                    self.local_data["history"][user_id] = []
-                self.local_data["history"][user_id].insert(0, history_entry)
-                print(f"✅ History saved locally: {entry_id}")
-            
-            return True
+                print(f"❌ Failed to save history to Supabase")
+                return False
             
         except Exception as e:
             print(f"❌ Save history error: {e}")
@@ -209,138 +202,48 @@ class SupabaseDatabase:
     
     def get_user_history(self, user_id: str, limit: int = 50, 
                         offset: int = 0, filter_disease: Optional[str] = None) -> List[Dict]:
-        """Get user's prediction history with optional filtering"""
+        """Get user's prediction history - ALWAYS from Supabase"""
         try:
-            if self.supabase:
-                # Build query
-                query = self.supabase.table("prediction_history").select("*").eq("user_id", user_id)
-                
-                if filter_disease and filter_disease != "all":
-                    if filter_disease == "healthy":
-                        query = query.ilike("prediction", "%healthy%")
-                    elif filter_disease == "bacterial":
-                        query = query.ilike("prediction", "%bacterial%")
-                    elif filter_disease == "fungal":
-                        query = query.ilike("prediction", "%fungal%")
-                    elif filter_disease == "parasitic":
-                        query = query.ilike("prediction", "%parasitic%")
-                    elif filter_disease == "viral":
-                        query = query.ilike("prediction", "%viral%")
-                
-                # Execute query with ordering and pagination
-                result = query.order("timestamp", desc=True).range(offset, offset + limit - 1).execute()
-                return result.data if result.data else []
-            else:
-                # Local fallback
-                if user_id not in self.local_data["history"]:
-                    return []
-                
-                history = self.local_data["history"][user_id]
-                if filter_disease and filter_disease != "all":
-                    if filter_disease == "healthy":
-                        history = [h for h in history if "healthy" in h["prediction"].lower()]
-                    elif filter_disease == "bacterial":
-                        history = [h for h in history if "bacterial" in h["prediction"].lower()]
-                    elif filter_disease == "fungal":
-                        history = [h for h in history if "fungal" in h["prediction"].lower()]
-                    elif filter_disease == "parasitic":
-                        history = [h for h in history if "parasitic" in h["prediction"].lower()]
-                    elif filter_disease == "viral":
-                        history = [h for h in history if "viral" in h["prediction"].lower()]
-                
-                return history[offset:offset + limit]
+            print(f"📜 Fetching history for user {user_id}")
+            
+            # Build query
+            query = self.supabase.table("prediction_history").select("*").eq("user_id", user_id)
+            
+            if filter_disease and filter_disease != "all":
+                if filter_disease == "healthy":
+                    query = query.ilike("prediction", "%healthy%")
+                else:
+                    query = query.ilike("prediction", f"%{filter_disease}%")
+            
+            # Execute query with ordering and pagination
+            result = query.order("timestamp", desc=True).range(offset, offset + limit - 1).execute()
+            
+            print(f"✅ Found {len(result.data)} history entries")
+            return result.data if result.data else []
                 
         except Exception as e:
             print(f"❌ Get history error: {e}")
             return []
     
-    def get_history_stats(self, user_id: str) -> Dict:
-        """Get statistics about user's history"""
-        try:
-            if self.supabase:
-                # Get total count
-                total_result = self.supabase.table("prediction_history").select("*", count="exact").eq("user_id", user_id).execute()
-                total_count = total_result.count if hasattr(total_result, 'count') else 0
-                
-                # Get all entries for this user
-                all_entries = self.supabase.table("prediction_history").select("prediction, timestamp").eq("user_id", user_id).execute()
-                
-                # Count healthy vs disease
-                healthy_count = 0
-                disease_count = 0
-                disease_types = {}
-                last_scan = None
-                
-                for entry in all_entries.data:
-                    pred = entry["prediction"].lower()
-                    if "healthy" in pred:
-                        healthy_count += 1
-                    else:
-                        disease_count += 1
-                        # Extract main disease type
-                        if "bacterial" in pred:
-                            disease_types["Bacterial"] = disease_types.get("Bacterial", 0) + 1
-                        elif "fungal" in pred:
-                            disease_types["Fungal"] = disease_types.get("Fungal", 0) + 1
-                        elif "parasitic" in pred:
-                            disease_types["Parasitic"] = disease_types.get("Parasitic", 0) + 1
-                        elif "viral" in pred:
-                            disease_types["Viral"] = disease_types.get("Viral", 0) + 1
-                        else:
-                            disease_types["Other"] = disease_types.get("Other", 0) + 1
-                    
-                    # Track last scan
-                    if not last_scan or entry["timestamp"] > last_scan:
-                        last_scan = entry["timestamp"]
-                
-                return {
-                    "total": total_count,
-                    "healthy": healthy_count,
-                    "disease": disease_count,
-                    "disease_types": disease_types,
-                    "last_scan": last_scan
-                }
-            else:
-                # Local fallback
-                if user_id not in self.local_data["history"]:
-                    return {"total": 0, "healthy": 0, "disease": 0, "disease_types": {}, "last_scan": None}
-                
-                history = self.local_data["history"][user_id]
-                healthy = sum(1 for h in history if "healthy" in h["prediction"].lower())
-                disease = len(history) - healthy
-                
-                disease_types = {}
-                last_scan = None
-                for entry in history:
-                    pred = entry["prediction"].lower()
-                    if "healthy" not in pred:
-                        if "bacterial" in pred:
-                            disease_types["Bacterial"] = disease_types.get("Bacterial", 0) + 1
-                        elif "fungal" in pred:
-                            disease_types["Fungal"] = disease_types.get("Fungal", 0) + 1
-                        elif "parasitic" in pred:
-                            disease_types["Parasitic"] = disease_types.get("Parasitic", 0) + 1
-                        elif "viral" in pred:
-                            disease_types["Viral"] = disease_types.get("Viral", 0) + 1
-                        else:
-                            disease_types["Other"] = disease_types.get("Other", 0) + 1
-                    
-                    if not last_scan or entry["timestamp"] > last_scan:
-                        last_scan = entry["timestamp"]
-                
-                return {
-                    "total": len(history),
-                    "healthy": healthy,
-                    "disease": disease,
-                    "disease_types": disease_types,
-                    "last_scan": last_scan
-                }
-                
-        except Exception as e:
-            print(f"❌ Get stats error: {e}")
-            return {"total": 0, "healthy": 0, "disease": 0, "disease_types": {}, "last_scan": None}
-    
     # ========== USER PROFILE ==========
+    
+    def get_user_profile(self, user_id: str) -> Optional[Dict]:
+        """Get user profile by ID - ALWAYS from Supabase"""
+        try:
+            result = self.supabase.table("users").select("*").eq("id", user_id).execute()
+            
+            if result.data:
+                user = result.data[0]
+                # Remove sensitive data
+                if "password_hash" in user:
+                    del user["password_hash"]
+                return user
+            
+            return None
+            
+        except Exception as e:
+            print(f"❌ Get profile error: {e}")
+            return None
     
     def update_user_profile(self, user_id: str, name: Optional[str] = None,
                            hardware_id: Optional[str] = None) -> tuple:
@@ -351,7 +254,7 @@ class SupabaseDatabase:
                 return False, f"Invalid hardware ID. Must be one of: {', '.join(self.VALID_HARDWARE_IDS[:3])}..."
             
             # Check if hardware_id is already in use (by another user)
-            if hardware_id and self.supabase:
+            if hardware_id:
                 existing = self.supabase.table("users").select("id, hardware_id").eq("hardware_id", hardware_id).execute()
                 if existing.data and existing.data[0]["id"] != user_id:
                     return False, "Hardware ID already registered to another user"
@@ -359,64 +262,23 @@ class SupabaseDatabase:
             update_data = {}
             if name:
                 update_data["name"] = name
-            if hardware_id is not None:  # Allow setting to empty string
+            if hardware_id is not None:
                 update_data["hardware_id"] = hardware_id if hardware_id else None
             
             if not update_data:
                 return False, "No data to update"
             
-            if self.supabase:
-                result = self.supabase.table("users").update(update_data).eq("id", user_id).execute()
-                if not result.data:
-                    return False, "User not found"
-                print(f"✅ Profile updated in Supabase for user {user_id}")
-            else:
-                # Find user by ID in local data
-                user_found = False
-                for email, user in self.local_data["users"].items():
-                    if user["id"] == user_id:
-                        if name:
-                            user["name"] = name
-                        if hardware_id is not None:
-                            user["hardware_id"] = hardware_id if hardware_id else None
-                        user_found = True
-                        break
-                
-                if not user_found:
-                    return False, "User not found"
-                print(f"✅ Profile updated locally for user {user_id}")
+            result = self.supabase.table("users").update(update_data).eq("id", user_id).execute()
             
-            return True, "Profile updated successfully"
+            if result.data:
+                print(f"✅ Profile updated for user {user_id}")
+                return True, "Profile updated successfully"
+            else:
+                return False, "User not found"
             
         except Exception as e:
             print(f"❌ Update profile error: {e}")
             return False, f"Update failed: {str(e)}"
-    
-    def get_user_profile(self, user_id: str) -> Optional[Dict]:
-        """Get user profile by ID"""
-        try:
-            if self.supabase:
-                result = self.supabase.table("users").select("*").eq("id", user_id).execute()
-                if result.data:
-                    user = result.data[0]
-                    # Remove sensitive data
-                    if "password_hash" in user:
-                        del user["password_hash"]
-                    return user
-            else:
-                # Find user in local data
-                for email, user in self.local_data["users"].items():
-                    if user["id"] == user_id:
-                        user_copy = user.copy()
-                        if "password_hash" in user_copy:
-                            del user_copy["password_hash"]
-                        return user_copy
-                        
-            return None
-            
-        except Exception as e:
-            print(f"❌ Get profile error: {e}")
-            return None
     
     # ========== HELPER METHODS ==========
     
@@ -427,8 +289,7 @@ class SupabaseDatabase:
             "bacterial": "🦠 BACTERIAL INFECTION - Immediate action required.\n\n1. Isolate affected fish immediately\n2. Antibiotic treatment (Kanamycin or Erythromycin)\n3. Salt bath: 1 tbsp per 5 gallons\n4. Increase water temperature to 28°C\n5. Daily 30% water changes\n6. Consult veterinarian if no improvement in 48 hours",
             "fungal": "🍄 FUNGAL INFECTION - Treatment needed.\n\n1. Antifungal medication (Methylene Blue)\n2. Salt bath: 2 tsp per gallon for 30 minutes\n3. Improve water quality immediately\n4. Remove any dead tissue carefully\n5. Increase aeration\n6. Treat for 7-10 days minimum",
             "parasitic": "🐛 PARASITIC INFECTION - Quarantine required.\n\n1. Anti-parasitic medication (Praziquantel)\n2. Formalin bath (follow instructions carefully)\n3. Raise temperature to 30°C gradually\n4. Vacuum substrate thoroughly\n5. Treat all fish in tank\n6. Repeat treatment after 7 days",
-            "viral": "🦠 VIRAL INFECTION - Supportive care.\n\n1. No specific treatment available\n2. Maintain optimal water conditions\n3. Add aquarium salt (1 tsp per gallon)\n4. Provide high-quality food\n5. Reduce stress (dim lights, no handling)\n6. Watch for secondary infections",
-            "default": "⚠️ UNKNOWN CONDITION - General care.\n\n1. Quarantine affected fish\n2. Improve water quality (test parameters)\n3. Consult aquatic veterinarian\n4. Take clear photos for diagnosis\n5. Monitor symptoms closely"
+            "viral": "🦠 VIRAL INFECTION - Supportive care.\n\n1. No specific treatment available\n2. Maintain optimal water conditions\n3. Add aquarium salt (1 tsp per gallon)\n4. Provide high-quality food\n5. Reduce stress (dim lights, no handling)\n6. Watch for secondary infections"
         }
         
         pred_lower = prediction.lower()
@@ -439,100 +300,58 @@ class SupabaseDatabase:
             return plans["bacterial"]
         elif "fungal" in pred_lower:
             return plans["fungal"]
-        elif "parasitic" in pred_lower or "parasite" in pred_lower:
+        elif "parasitic" in pred_lower:
             return plans["parasitic"]
-        elif "viral" in pred_lower or "virus" in pred_lower:
+        elif "viral" in pred_lower:
             return plans["viral"]
         else:
-            return plans["default"]
+            return "⚠️ UNKNOWN CONDITION - Consult with aquatic veterinarian for proper diagnosis and treatment."
     
-    def get_last_scan(self, user_id: str) -> Optional[str]:
-        """Get timestamp of last scan"""
+    def get_history_stats(self, user_id: str) -> Dict:
+        """Get statistics about user's history"""
         try:
-            if self.supabase:
-                result = self.supabase.table("prediction_history").select("timestamp").eq("user_id", user_id).order("timestamp", desc=True).limit(1).execute()
-                return result.data[0]["timestamp"] if result.data else None
-            else:
-                if user_id in self.local_data["history"] and self.local_data["history"][user_id]:
-                    return self.local_data["history"][user_id][0]["timestamp"]
-                return None
-        except:
-            return None
-    
-    def search_history(self, user_id: str, query: str, limit: int = 20) -> List[Dict]:
-        """Search in user's history"""
-        try:
-            query_lower = query.lower()
+            # Get all entries for this user
+            all_entries = self.supabase.table("prediction_history").select("prediction, timestamp").eq("user_id", user_id).execute()
             
-            if self.supabase:
-                # Try to search in prediction field
-                result = self.supabase.table("prediction_history").select("*").eq("user_id", user_id).ilike("prediction", f"%{query}%").order("timestamp", desc=True).limit(limit).execute()
+            total_count = len(all_entries.data)
+            healthy_count = 0
+            disease_count = 0
+            disease_types = {}
+            last_scan = None
+            
+            for entry in all_entries.data:
+                pred = entry["prediction"].lower()
+                if "healthy" in pred:
+                    healthy_count += 1
+                else:
+                    disease_count += 1
+                    # Extract main disease type
+                    if "bacterial" in pred:
+                        disease_types["Bacterial"] = disease_types.get("Bacterial", 0) + 1
+                    elif "fungal" in pred:
+                        disease_types["Fungal"] = disease_types.get("Fungal", 0) + 1
+                    elif "parasitic" in pred:
+                        disease_types["Parasitic"] = disease_types.get("Parasitic", 0) + 1
+                    elif "viral" in pred:
+                        disease_types["Viral"] = disease_types.get("Viral", 0) + 1
+                    else:
+                        disease_types["Other"] = disease_types.get("Other", 0) + 1
                 
-                if not result.data:
-                    # If no results, try symptoms array (PostgreSQL array contains)
-                    result = self.supabase.table("prediction_history").select("*").eq("user_id", user_id).contains("symptoms", [query]).order("timestamp", desc=True).limit(limit).execute()
+                # Track last scan
+                if not last_scan or entry["timestamp"] > last_scan:
+                    last_scan = entry["timestamp"]
+            
+            return {
+                "total": total_count,
+                "healthy": healthy_count,
+                "disease": disease_count,
+                "disease_types": disease_types,
+                "last_scan": last_scan
+            }
                 
-                return result.data if result.data else []
-            else:
-                if user_id not in self.local_data["history"]:
-                    return []
-                
-                return [
-                    h for h in self.local_data["history"][user_id]
-                    if query_lower in h["prediction"].lower() or 
-                       any(query_lower in symptom.lower() for symptom in h.get("symptoms", []))
-                ][:limit]
         except Exception as e:
-            print(f"❌ Search error: {e}")
-            return []
-    
-    def delete_history_entry(self, user_id: str, entry_id: str) -> bool:
-        """Delete a specific history entry"""
-        try:
-            if self.supabase:
-                result = self.supabase.table("prediction_history").delete().eq("id", entry_id).eq("user_id", user_id).execute()
-                deleted = bool(result.data)
-                if deleted:
-                    print(f"✅ Deleted history entry {entry_id} from Supabase")
-                return deleted
-            else:
-                if user_id in self.local_data["history"]:
-                    initial_count = len(self.local_data["history"][user_id])
-                    self.local_data["history"][user_id] = [
-                        h for h in self.local_data["history"][user_id]
-                        if h["id"] != entry_id
-                    ]
-                    deleted = initial_count != len(self.local_data["history"][user_id])
-                    if deleted:
-                        print(f"✅ Deleted history entry {entry_id} locally")
-                    return deleted
-                return False
-        except Exception as e:
-            print(f"❌ Delete entry error: {e}")
-            return False
-    
-    def clear_user_history(self, user_id: str) -> bool:
-        """Clear all history for a user"""
-        try:
-            if self.supabase:
-                # Delete all history entries
-                self.supabase.table("prediction_history").delete().eq("user_id", user_id).execute()
-                
-                # Reset scan count
-                self.supabase.table("users").update({
-                    "scan_count": 0,
-                    "last_scan": None
-                }).eq("id", user_id).execute()
-                
-                print(f"✅ Cleared all history for user {user_id} in Supabase")
-            else:
-                self.local_data["history"][user_id] = []
-                print(f"✅ Cleared all history for user {user_id} locally")
-                
-            return True
-        except Exception as e:
-            print(f"❌ Clear history error: {e}")
-            return False
+            print(f"❌ Get stats error: {e}")
+            return {"total": 0, "healthy": 0, "disease": 0, "disease_types": {}, "last_scan": None}
     
     def get_hardware_ids(self) -> List[str]:
         """Get list of valid hardware IDs"""
@@ -541,33 +360,18 @@ class SupabaseDatabase:
     def check_hardware_available(self, hardware_id: str) -> bool:
         """Check if hardware ID is available (not already assigned)"""
         try:
-            if self.supabase:
-                result = self.supabase.table("users").select("hardware_id").eq("hardware_id", hardware_id).execute()
-                return len(result.data) == 0
-            else:
-                for user in self.local_data["users"].values():
-                    if user.get("hardware_id") == hardware_id:
-                        return False
-                return True
+            result = self.supabase.table("users").select("hardware_id").eq("hardware_id", hardware_id).execute()
+            return len(result.data) == 0
         except:
             return True
     
     def get_all_users_count(self) -> int:
-        """Get total number of users (for admin purposes)"""
+        """Get total number of users"""
         try:
-            if self.supabase:
-                result = self.supabase.table("users").select("*", count="exact").execute()
-                return result.count if hasattr(result, 'count') else 0
-            else:
-                return len(self.local_data["users"])
+            result = self.supabase.table("users").select("*", count="exact").execute()
+            return result.count
         except:
             return 0
 
 # Create global instance
 db = SupabaseDatabase()
-print("=" * 50)
-print("🐟 HEALTHYFINS DATABASE INITIALIZED")
-print(f"📊 Database Type: {'Supabase' if db.supabase else 'Local JSON'}")
-print(f"🔧 Valid Hardware IDs: {len(db.VALID_HARDWARE_IDS)}")
-print(f"👥 Total Users: {db.get_all_users_count()}")
-print("=" * 50)
