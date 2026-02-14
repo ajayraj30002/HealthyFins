@@ -1,21 +1,19 @@
-# database.py - COMPLETE FIXED VERSION FOR RENDER DEPLOYMENT
+# database.py - ULTIMATE DEBUG VERSION WITH FILE BACKUP
 import os
 import hashlib
 from datetime import datetime
 from typing import Optional, List, Dict, Any
 import json
-
-# IMPORTANT: Don't import supabase at the top level
-# We'll import it lazily inside methods
+import traceback
 
 class SupabaseDatabase:
     def __init__(self):
-        # Get Supabase credentials from environment variables
+        # Get Supabase credentials
         self.supabase_url = os.getenv("SUPABASE_URL", "https://bxfljshwfpgsnfyqemcd.supabase.co")
         self.supabase_key = os.getenv("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4Zmxqc2h3ZnBnc25meXFlbWNkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0NjYxMDUsImV4cCI6MjA4NDA0MjEwNX0.M8qOkC-ajPfWgxG-PjCfY6UGLSSm5O2jmlQNTfaM3IQ")
         self._supabase_client = None
         
-        # Predefined hardware IDs (only these are allowed)
+        # Predefined hardware IDs
         self.VALID_HARDWARE_IDS = [
             "FISHMON-001", "FISHMON-002", "FISHMON-003",
             "FISHMON-004", "FISHMON-005", "FISHMON-006",
@@ -23,35 +21,118 @@ class SupabaseDatabase:
             "HYDROPRO-201", "HYDROPRO-202"
         ]
         
-        # Print status (but DON'T connect yet)
-        print("=" * 50)
+        # Create data directory for file fallback
+        os.makedirs("data", exist_ok=True)
+        os.makedirs("data/users", exist_ok=True)
+        os.makedirs("data/history", exist_ok=True)
+        
+        print("=" * 60)
         print("🐟 HEALTHYFINS DATABASE INITIALIZED")
-        print(f"🔧 Supabase URL configured: {'Yes' if self.supabase_url else 'No'}")
-        print(f"🔧 Supabase Key configured: {'Yes' if self.supabase_key else 'No'}")
-        print(f"🔧 Valid Hardware IDs: {len(self.VALID_HARDWARE_IDS)}")
-        print("=" * 50)
+        print(f"📁 File storage: {os.path.abspath('data')}")
+        print(f"🔧 Supabase URL: {'✅ Configured' if self.supabase_url else '❌ Missing'}")
+        print(f"🔧 Supabase Key: {'✅ Configured' if self.supabase_key else '❌ Missing'}")
+        print("=" * 60)
     
     @property
     def supabase(self):
-        """Lazy-load Supabase client only when needed"""
+        """Lazy-load Supabase client"""
         if self._supabase_client is None and self.supabase_url and self.supabase_key:
             try:
-                # Import supabase only when needed
                 import supabase
                 self._supabase_client = supabase.create_client(self.supabase_url, self.supabase_key)
-                print("✅ Supabase client created successfully")
+                print("✅ Supabase client created")
+                
+                # Test connection
+                try:
+                    test = self._supabase_client.table("users").select("count", count="exact").limit(1).execute()
+                    print(f"✅ Supabase connection test passed")
+                except Exception as e:
+                    print(f"⚠️ Supabase connection test failed: {e}")
+                    self._supabase_client = None
+                    
             except Exception as e:
                 print(f"⚠️ Supabase client creation failed: {e}")
                 self._supabase_client = None
         return self._supabase_client
     
+    # ========== FILE STORAGE METHODS ==========
+    
+    def _get_user_file_path(self, email: str) -> str:
+        """Get path for user file"""
+        safe_email = email.replace('@', '_at_').replace('.', '_dot_')
+        return f"data/users/{safe_email}.json"
+    
+    def _get_history_file_path(self, user_id: str) -> str:
+        """Get path for history file"""
+        return f"data/history/{user_id}.json"
+    
+    def _save_user_to_file(self, user_data: dict) -> bool:
+        """Save user to file system"""
+        try:
+            file_path = self._get_user_file_path(user_data["email"])
+            with open(file_path, 'w') as f:
+                json.dump(user_data, f, indent=2, default=str)
+            print(f"✅ User saved to file: {file_path}")
+            return True
+        except Exception as e:
+            print(f"❌ File save error: {e}")
+            return False
+    
+    def _get_user_from_file(self, email: str) -> Optional[Dict]:
+        """Get user from file system"""
+        try:
+            file_path = self._get_user_file_path(email)
+            if os.path.exists(file_path):
+                with open(file_path, 'r') as f:
+                    return json.load(f)
+        except Exception as e:
+            print(f"❌ File read error: {e}")
+        return None
+    
+    def _save_history_to_file(self, user_id: str, history_entry: dict) -> bool:
+        """Save history to file system"""
+        try:
+            file_path = self._get_history_file_path(user_id)
+            
+            # Load existing history
+            history = []
+            if os.path.exists(file_path):
+                with open(file_path, 'r') as f:
+                    history = json.load(f)
+            
+            # Add new entry
+            history.insert(0, history_entry)
+            
+            # Save back
+            with open(file_path, 'w') as f:
+                json.dump(history, f, indent=2, default=str)
+            
+            print(f"✅ History saved to file: {file_path}")
+            return True
+        except Exception as e:
+            print(f"❌ History file save error: {e}")
+            return False
+    
+    def _get_history_from_file(self, user_id: str) -> List[Dict]:
+        """Get history from file system"""
+        try:
+            file_path = self._get_history_file_path(user_id)
+            if os.path.exists(file_path):
+                with open(file_path, 'r') as f:
+                    return json.load(f)
+        except Exception as e:
+            print(f"❌ History file read error: {e}")
+        return []
+    
     # ========== USER MANAGEMENT ==========
     
     def create_user(self, email: str, password: str, name: str, hardware_id: Optional[str] = None) -> tuple:
         """Create a new user with validation"""
+        print(f"\n{'='*60}")
+        print(f"📝 CREATE USER - {email}")
+        print(f"{'='*60}")
+        
         try:
-            print(f"📝 Attempting to create user: {email}")
-            
             # Validate hardware_id if provided
             if hardware_id and hardware_id not in self.VALID_HARDWARE_IDS:
                 return False, f"Invalid hardware ID. Must be one of: {', '.join(self.VALID_HARDWARE_IDS[:3])}..."
@@ -72,131 +153,124 @@ class SupabaseDatabase:
                 "is_active": True
             }
             
-            # Try Supabase first
+            print(f"📊 User data prepared:")
+            print(f"  - ID: {user_id}")
+            print(f"  - Email: {email}")
+            print(f"  - Name: {name}")
+            print(f"  - Hardware: {hardware_id}")
+            
+            # ALWAYS save to file first (guaranteed to work)
+            file_saved = self._save_user_to_file(user_data)
+            print(f"📁 File save: {'✅ Success' if file_saved else '❌ Failed'}")
+            
+            # Try Supabase if available
+            supabase_saved = False
             if self.supabase:
                 try:
-                    # Check if email already exists
+                    # Check if email exists
                     existing = self.supabase.table("users").select("*").eq("email", email).execute()
                     if existing.data:
-                        return False, "Email already registered"
-                    
-                    # Check hardware_id if provided
-                    if hardware_id:
-                        existing_hw = self.supabase.table("users").select("*").eq("hardware_id", hardware_id).execute()
-                        if existing_hw.data:
-                            return False, "Hardware ID already registered to another user"
-                    
-                    # Save to Supabase
-                    result = self.supabase.table("users").insert(user_data).execute()
-                    if result.data:
-                        print(f"✅ User created in Supabase: {email}")
-                        return True, {
-                            "user_id": user_id,
-                            "email": email,
-                            "name": name,
-                            "hardware_id": hardware_id,
-                            "created_at": user_data["created_at"]
-                        }
+                        print(f"⚠️ Email already exists in Supabase")
+                    else:
+                        # Save to Supabase
+                        result = self.supabase.table("users").insert(user_data).execute()
+                        supabase_saved = bool(result.data)
+                        print(f"☁️ Supabase save: {'✅ Success' if supabase_saved else '❌ Failed'}")
                 except Exception as e:
-                    print(f"⚠️ Supabase insert failed, falling back to file storage: {e}")
-                    # Fall through to file storage
+                    print(f"☁️ Supabase error: {e}")
             
-            # File-based fallback (ensures registration always works)
-            return self._save_user_to_file(user_data, email)
+            # Return success if file saved (guaranteed)
+            if file_saved:
+                print(f"✅ USER CREATED SUCCESSFULLY")
+                print(f"{'='*60}\n")
+                return True, {
+                    "user_id": user_id,
+                    "email": email,
+                    "name": name,
+                    "hardware_id": hardware_id,
+                    "created_at": user_data["created_at"]
+                }
+            else:
+                print(f"❌ USER CREATION FAILED")
+                print(f"{'='*60}\n")
+                return False, "Failed to save user data"
             
         except Exception as e:
             print(f"❌ Create user error: {e}")
-            return False, f"Registration failed: {str(e)}"
-    
-    def _save_user_to_file(self, user_data: dict, email: str) -> tuple:
-        """Fallback: Save user to JSON file"""
-        try:
-            # Create data directory if it doesn't exist
-            os.makedirs("data", exist_ok=True)
-            
-            # Load existing users
-            users_file = "data/users.json"
-            if os.path.exists(users_file):
-                with open(users_file, 'r') as f:
-                    users = json.load(f)
-            else:
-                users = {}
-            
-            # Check if email exists
-            if email in users:
-                return False, "Email already registered"
-            
-            # Save user
-            users[email] = user_data
-            with open(users_file, 'w') as f:
-                json.dump(users, f, indent=2)
-            
-            print(f"✅ User created in file storage: {email}")
-            return True, {
-                "user_id": user_data["id"],
-                "email": user_data["email"],
-                "name": user_data["name"],
-                "hardware_id": user_data.get("hardware_id"),
-                "created_at": user_data["created_at"]
-            }
-        except Exception as e:
-            print(f"❌ File save error: {e}")
+            traceback.print_exc()
+            print(f"{'='*60}\n")
             return False, f"Registration failed: {str(e)}"
     
     def authenticate_user(self, email: str, password: str) -> tuple:
         """Authenticate user login"""
+        print(f"\n{'='*60}")
+        print(f"🔐 AUTHENTICATE - {email}")
+        print(f"{'='*60}")
+        
         try:
-            print(f"🔐 Authenticating user: {email}")
-            
             # Hash the provided password
             password_hash = hashlib.sha256(password.encode()).hexdigest()
             
-            # Try Supabase first
-            if self.supabase:
+            # Try file storage first (always works)
+            user = self._get_user_from_file(email)
+            source = "file"
+            
+            # If not in file, try Supabase
+            if not user and self.supabase:
                 try:
                     result = self.supabase.table("users").select("*").eq("email", email).execute()
                     if result.data:
                         user = result.data[0]
-                        if user.get("password_hash") == password_hash:
-                            # Update last login
-                            self.supabase.table("users").update({
-                                "last_login": datetime.now().isoformat()
-                            }).eq("id", user["id"]).execute()
-                            
-                            return True, {
-                                "user_id": user["id"],
-                                "email": user["email"],
-                                "name": user["name"],
-                                "hardware_id": user.get("hardware_id", ""),
-                                "created_at": user["created_at"],
-                                "scan_count": user.get("scan_count", 0)
-                            }
+                        source = "supabase"
+                        # Save to file for future use
+                        self._save_user_to_file(user)
                 except Exception as e:
-                    print(f"⚠️ Supabase auth failed, trying file storage: {e}")
-                    # Fall through to file storage
+                    print(f"☁️ Supabase read error: {e}")
             
-            # Try file storage
-            users_file = "data/users.json"
-            if os.path.exists(users_file):
-                with open(users_file, 'r') as f:
-                    users = json.load(f)
-                
-                if email in users:
-                    user = users[email]
-                    if user.get("password_hash") == password_hash:
-                        return True, {
-                            "user_id": user["id"],
-                            "email": user["email"],
-                            "name": user["name"],
-                            "hardware_id": user.get("hardware_id", ""),
-                            "created_at": user["created_at"],
-                            "scan_count": user.get("scan_count", 0)
-                        }
+            if not user:
+                print(f"❌ User not found")
+                print(f"{'='*60}\n")
+                return False, "Invalid email or password"
             
-            return False, "Invalid email or password"
+            print(f"📂 User found in: {source}")
+            
+            # Verify password
+            if user.get("password_hash") != password_hash:
+                print(f"❌ Password mismatch")
+                print(f"{'='*60}\n")
+                return False, "Invalid email or password"
+            
+            # Update last login
+            user["last_login"] = datetime.now().isoformat()
+            
+            # Save back to file
+            self._save_user_to_file(user)
+            
+            # Try Supabase update if available
+            if self.supabase:
+                try:
+                    self.supabase.table("users").update({
+                        "last_login": user["last_login"]
+                    }).eq("id", user["id"]).execute()
+                except:
+                    pass
+            
+            print(f"✅ Authentication successful")
+            print(f"{'='*60}\n")
+            
+            return True, {
+                "user_id": user["id"],
+                "email": user["email"],
+                "name": user["name"],
+                "hardware_id": user.get("hardware_id", ""),
+                "created_at": user["created_at"],
+                "scan_count": user.get("scan_count", 0)
+            }
             
         except Exception as e:
             print(f"❌ Authentication error: {e}")
+            traceback.print_exc()
+            print(f"{'='*60}\n")
             return False, f"Authentication failed: {str(e)}"
     
     # ========== PREDICTION HISTORY ==========
@@ -207,6 +281,10 @@ class SupabaseDatabase:
                               symptoms: Optional[List[str]] = None,
                               model_type: str = "ai_model") -> bool:
         """Add a prediction to user's history"""
+        print(f"\n{'='*60}")
+        print(f"📜 ADD HISTORY - User: {user_id}")
+        print(f"{'='*60}")
+        
         try:
             entry_id = f"{user_id}_{int(datetime.now().timestamp() * 1000)}"
             
@@ -224,80 +302,83 @@ class SupabaseDatabase:
                 "is_urgent": confidence > 70 and "healthy" not in prediction.lower()
             }
             
-            # Try Supabase
-            if self.supabase:
+            print(f"📊 History entry:")
+            print(f"  - Prediction: {prediction}")
+            print(f"  - Confidence: {confidence}%")
+            print(f"  - Image: {image_name}")
+            
+            # ALWAYS save to file first
+            file_saved = self._save_history_to_file(user_id, history_entry)
+            print(f"📁 File save: {'✅ Success' if file_saved else '❌ Failed'}")
+            
+            # Try Supabase if available
+            if self.supabase and file_saved:
                 try:
                     result = self.supabase.table("prediction_history").insert(history_entry).execute()
                     if result.data:
-                        # Update user's scan count
-                        self.supabase.table("users").update({
-                            "scan_count": self.supabase.table("users").select("scan_count").eq("id", user_id).execute().data[0].get("scan_count", 0) + 1
-                        }).eq("id", user_id).execute()
-                        return True
+                        print(f"☁️ Supabase save: ✅ Success")
+                        
+                        # Update user scan count
+                        try:
+                            user = self._get_user_from_file_by_id(user_id)
+                            if user:
+                                user["scan_count"] = user.get("scan_count", 0) + 1
+                                self._save_user_to_file(user)
+                                
+                                # Try Supabase update
+                                self.supabase.table("users").update({
+                                    "scan_count": user["scan_count"]
+                                }).eq("id", user_id).execute()
+                        except Exception as e:
+                            print(f"⚠️ Scan count update error: {e}")
+                            
                 except Exception as e:
-                    print(f"⚠️ Supabase history save failed: {e}")
+                    print(f"☁️ Supabase save error: {e}")
             
-            # File fallback
-            return self._save_history_to_file(user_id, history_entry)
+            print(f"✅ History saved: {file_saved}")
+            print(f"{'='*60}\n")
+            
+            return file_saved
             
         except Exception as e:
             print(f"❌ Save history error: {e}")
+            traceback.print_exc()
+            print(f"{'='*60}\n")
             return False
     
-    def _save_history_to_file(self, user_id: str, history_entry: dict) -> bool:
-        """Save history to file as fallback"""
+    def _get_user_from_file_by_id(self, user_id: str) -> Optional[Dict]:
+        """Get user by ID from file system"""
         try:
-            os.makedirs("data", exist_ok=True)
-            history_file = f"data/history_{user_id}.json"
-            
-            history = []
-            if os.path.exists(history_file):
-                with open(history_file, 'r') as f:
-                    history = json.load(f)
-            
-            history.insert(0, history_entry)
-            
-            with open(history_file, 'w') as f:
-                json.dump(history, f, indent=2)
-            
-            return True
+            users_dir = "data/users"
+            for filename in os.listdir(users_dir):
+                if filename.endswith('.json'):
+                    with open(os.path.join(users_dir, filename), 'r') as f:
+                        user = json.load(f)
+                        if user.get("id") == user_id:
+                            return user
         except Exception as e:
-            print(f"❌ File history save error: {e}")
-            return False
+            print(f"❌ Find user by ID error: {e}")
+        return None
     
     def get_user_history(self, user_id: str, limit: int = 50, 
                         offset: int = 0, filter_disease: Optional[str] = None) -> List[Dict]:
         """Get user's prediction history"""
         try:
-            # Try Supabase first
-            if self.supabase:
-                try:
-                    query = self.supabase.table("prediction_history").select("*").eq("user_id", user_id)
-                    
-                    if filter_disease and filter_disease != "all":
-                        if filter_disease == "healthy":
-                            query = query.ilike("prediction", "%healthy%")
-                        else:
-                            query = query.ilike("prediction", f"%{filter_disease}%")
-                    
-                    result = query.order("timestamp", desc=True).range(offset, offset + limit - 1).execute()
-                    if result.data:
-                        return result.data
-                except Exception as e:
-                    print(f"⚠️ Supabase history fetch failed: {e}")
+            # Get from file (guaranteed to work)
+            history = self._get_history_from_file(user_id)
             
-            # File fallback
-            history_file = f"data/history_{user_id}.json"
-            if os.path.exists(history_file):
-                with open(history_file, 'r') as f:
-                    history = json.load(f)
-                
-                if filter_disease and filter_disease != "all":
-                    history = [h for h in history if filter_disease.lower() in h["prediction"].lower()]
-                
-                return history[offset:offset + limit]
+            # Apply filter if needed
+            if filter_disease and filter_disease != "all" and history:
+                history = [
+                    h for h in history 
+                    if filter_disease.lower() in h["prediction"].lower()
+                ]
             
-            return []
+            # Apply pagination
+            paginated = history[offset:offset + limit]
+            print(f"📜 Retrieved {len(paginated)} history entries for user {user_id}")
+            
+            return paginated
                 
         except Exception as e:
             print(f"❌ Get history error: {e}")
@@ -344,31 +425,13 @@ class SupabaseDatabase:
     def get_user_profile(self, user_id: str) -> Optional[Dict]:
         """Get user profile by ID"""
         try:
-            if self.supabase:
-                try:
-                    result = self.supabase.table("users").select("*").eq("id", user_id).execute()
-                    if result.data:
-                        user = result.data[0]
-                        if "password_hash" in user:
-                            del user["password_hash"]
-                        return user
-                except Exception as e:
-                    print(f"⚠️ Supabase profile fetch failed: {e}")
+            # Try to find user by ID in files
+            user = self._get_user_from_file_by_id(user_id)
             
-            # File fallback
-            users_file = "data/users.json"
-            if os.path.exists(users_file):
-                with open(users_file, 'r') as f:
-                    users = json.load(f)
-                
-                for user in users.values():
-                    if user["id"] == user_id:
-                        user_copy = user.copy()
-                        if "password_hash" in user_copy:
-                            del user_copy["password_hash"]
-                        return user_copy
+            if user and "password_hash" in user:
+                del user["password_hash"]
             
-            return None
+            return user
             
         except Exception as e:
             print(f"❌ Get profile error: {e}")
@@ -406,12 +469,38 @@ class SupabaseDatabase:
     def check_hardware_available(self, hardware_id: str) -> bool:
         """Check if hardware ID is available"""
         try:
-            if self.supabase:
-                result = self.supabase.table("users").select("hardware_id").eq("hardware_id", hardware_id).execute()
-                return len(result.data) == 0
+            # Check in files
+            users_dir = "data/users"
+            if os.path.exists(users_dir):
+                for filename in os.listdir(users_dir):
+                    if filename.endswith('.json'):
+                        with open(os.path.join(users_dir, filename), 'r') as f:
+                            user = json.load(f)
+                            if user.get("hardware_id") == hardware_id:
+                                return False
             return True
         except:
             return True
 
-# Create global instance (NO CONNECTION ATTEMPTED HERE)
+# Create global instance
 db = SupabaseDatabase()
+
+# List all users in file storage on startup
+print("\n📂 CHECKING EXISTING USERS:")
+users_dir = "data/users"
+if os.path.exists(users_dir):
+    user_files = [f for f in os.listdir(users_dir) if f.endswith('.json')]
+    if user_files:
+        print(f"Found {len(user_files)} users in file storage:")
+        for user_file in user_files:
+            try:
+                with open(os.path.join(users_dir, user_file), 'r') as f:
+                    user = json.load(f)
+                    print(f"  - {user.get('email')} (ID: {user.get('id')})")
+            except:
+                print(f"  - {user_file}")
+    else:
+        print("No users found in file storage")
+else:
+    print("No users directory found - will create on first registration")
+print("=" * 60)
