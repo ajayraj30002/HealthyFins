@@ -1,4 +1,4 @@
-# app.py - COMPLETE VERSION WITH SUPABASE
+# app.py - COMPLETE FIXED VERSION WITH SUPABASE INTEGRATION
 from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, Form, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -13,7 +13,6 @@ from typing import Optional, List
 import traceback
 import warnings
 import h5py
-from pydantic import BaseModel
 
 # Import our modules
 sys.path.append('.')
@@ -46,13 +45,6 @@ app.add_middleware(
 )
 
 # ========== PYDANTIC MODELS ==========
-class HistoryFilter(BaseModel):
-    disease_type: Optional[str] = None
-    start_date: Optional[str] = None
-    end_date: Optional[str] = None
-    min_confidence: Optional[float] = None
-    max_confidence: Optional[float] = None
-
 class UserUpdate(BaseModel):
     name: Optional[str] = None
     hardware_id: Optional[str] = None
@@ -310,7 +302,11 @@ async def root():
         "version": "5.0.0",
         "frontend": "https://healthy-fins.vercel.app",
         "model": model_status,
-        "database": "supabase" if db.supabase else "local",
+        "database": {
+            "type": "supabase" if db.is_supabase_available() else "file_only",
+            "connected": db.is_supabase_available(),
+            "storage": "data/ folder"
+        },
         "hardware": {
             "available_ids": hardware_ids[:5],  # Show first 5
             "total_available": len(hardware_ids)
@@ -325,6 +321,22 @@ async def root():
 @app.get("/health")
 async def health_check():
     """Comprehensive health check"""
+    # Count users from files
+    users_count = 0
+    history_count = 0
+    
+    if os.path.exists("data/users"):
+        users_count = len([f for f in os.listdir("data/users") if f.endswith('.json')])
+    
+    if os.path.exists("data/history"):
+        for file in os.listdir("data/history"):
+            if file.endswith('.json'):
+                try:
+                    with open(os.path.join("data/history", file), 'r') as f:
+                        history_count += len(json.load(f))
+                except:
+                    pass
+    
     model_info = {
         "loaded": model is not None,
         "type": "real_trained" if model is not None else "analysis_mode",
@@ -336,8 +348,10 @@ async def health_check():
     }
     
     database_info = {
-        "type": "supabase" if db.supabase else "local",
-        "status": "connected" if db.supabase else "local_mode",
+        "type": "supabase" if db.is_supabase_available() else "file_only",
+        "connected": db.is_supabase_available(),
+        "users_in_files": users_count,
+        "history_entries": history_count,
         "hardware_ids": len(db.get_hardware_ids())
     }
     
@@ -522,6 +536,53 @@ def analyze_image_features(image_array):
         print(f"❌ Feature analysis error: {e}")
         return np.ones(len(class_names)) / len(class_names)
 
+def detect_symptoms(image_array, disease_name):
+    """Detect symptoms from image"""
+    symptoms = []
+    
+    try:
+        img_uint8 = (image_array[0] * 255).astype(np.uint8)
+        hsv = cv2.cvtColor(img_uint8, cv2.COLOR_RGB2HSV)
+        gray = cv2.cvtColor(img_uint8, cv2.COLOR_RGB2GRAY)
+        
+        # Check for common symptoms
+        # White spots
+        white_mask = (hsv[:,:,1] > 150) & (hsv[:,:,2] > 200)
+        if np.mean(white_mask) > 0.01:
+            symptoms.append("White spots")
+        
+        # Red patches
+        red_mask = (hsv[:,:,0] < 10) | (hsv[:,:,0] > 170)
+        if np.mean(red_mask) > 0.01:
+            symptoms.append("Red patches")
+        
+        # Dark areas (fungus/rot)
+        dark_mask = gray < 50
+        if np.mean(dark_mask) > 0.05:
+            symptoms.append("Dark patches")
+        
+        # Fuzzy growth
+        edges = cv2.Canny(gray, 100, 200)
+        if np.mean(edges) > 20:
+            symptoms.append("Fuzzy growth")
+        
+        # Based on disease name
+        disease_lower = disease_name.lower()
+        if 'gill' in disease_lower:
+            symptoms.append("Rapid gill movement")
+        if 'bacterial' in disease_lower:
+            symptoms.append("Swollen abdomen")
+        if 'fungal' in disease_lower:
+            symptoms.append("Cotton-like growth")
+        if 'parasitic' in disease_lower:
+            symptoms.append("Flashing/rubbing")
+        
+    except Exception as e:
+        print(f"❌ Symptom detection error: {e}")
+        symptoms = ["Visual inspection recommended"]
+    
+    return symptoms[:5]  # Return top 5 symptoms
+
 # ========== PROTECTED ENDPOINTS ==========
 @app.post("/predict")
 async def predict_disease(
@@ -634,53 +695,6 @@ async def predict_disease(
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Prediction error: {str(e)}")
 
-def detect_symptoms(image_array, disease_name):
-    """Detect symptoms from image"""
-    symptoms = []
-    
-    try:
-        img_uint8 = (image_array[0] * 255).astype(np.uint8)
-        hsv = cv2.cvtColor(img_uint8, cv2.COLOR_RGB2HSV)
-        gray = cv2.cvtColor(img_uint8, cv2.COLOR_RGB2GRAY)
-        
-        # Check for common symptoms
-        # White spots
-        white_mask = (hsv[:,:,1] > 150) & (hsv[:,:,2] > 200)
-        if np.mean(white_mask) > 0.01:
-            symptoms.append("White spots")
-        
-        # Red patches
-        red_mask = (hsv[:,:,0] < 10) | (hsv[:,:,0] > 170)
-        if np.mean(red_mask) > 0.01:
-            symptoms.append("Red patches")
-        
-        # Dark areas (fungus/rot)
-        dark_mask = gray < 50
-        if np.mean(dark_mask) > 0.05:
-            symptoms.append("Dark patches")
-        
-        # Fuzzy growth
-        edges = cv2.Canny(gray, 100, 200)
-        if np.mean(edges) > 20:
-            symptoms.append("Fuzzy growth")
-        
-        # Based on disease name
-        disease_lower = disease_name.lower()
-        if 'gill' in disease_lower:
-            symptoms.append("Rapid gill movement")
-        if 'bacterial' in disease_lower:
-            symptoms.append("Swollen abdomen")
-        if 'fungal' in disease_lower:
-            symptoms.append("Cotton-like growth")
-        if 'parasitic' in disease_lower:
-            symptoms.append("Flashing/rubbing")
-        
-    except Exception as e:
-        print(f"❌ Symptom detection error: {e}")
-        symptoms = ["Visual inspection recommended"]
-    
-    return symptoms[:5]  # Return top 5 symptoms
-
 # ========== PROFILE ENDPOINTS ==========
 @app.get("/profile")
 async def get_profile(current_user: dict = Depends(get_current_user)):
@@ -708,15 +722,16 @@ async def get_profile(current_user: dict = Depends(get_current_user)):
 
 @app.put("/profile")
 async def update_profile(
-    update_data: UserUpdate,
+    name: Optional[str] = Form(None),
+    hardware_id: Optional[str] = Form(None),
     current_user: dict = Depends(get_current_user)
 ):
     """Update user profile"""
     try:
         success, message = db.update_user_profile(
             user_id=current_user["user_id"],
-            name=update_data.name,
-            hardware_id=update_data.hardware_id
+            name=name,
+            hardware_id=hardware_id
         )
         
         if not success:
@@ -725,7 +740,10 @@ async def update_profile(
         return {
             "success": True,
             "message": message,
-            "updated_fields": update_data.dict(exclude_none=True)
+            "updated_fields": {
+                "name": name,
+                "hardware_id": hardware_id
+            }
         }
         
     except HTTPException:
@@ -780,7 +798,7 @@ async def get_history_entry(
 ):
     """Get specific history entry"""
     try:
-        history = db.get_user_history(current_user["user_id"], limit=100)
+        history = db.get_user_history(current_user["user_id"], limit=1000)
         
         # Find the specific entry
         entry = next((h for h in history if h["id"] == entry_id), None)
@@ -859,128 +877,13 @@ async def get_user_stats(current_user: dict = Depends(get_current_user)):
         print(f"❌ Get stats error: {e}")
         raise HTTPException(status_code=500, detail=f"Error fetching stats: {str(e)}")
 
-@app.get("/stats/daily")
-async def get_daily_stats(
-    days: int = Query(7, ge=1, le=30),
-    current_user: dict = Depends(get_current_user)
-):
-    """Get daily statistics"""
-    try:
-        # This would be implemented with proper date filtering in Supabase
-        # For now, return mock data
-        history = db.get_user_history(current_user["user_id"], limit=100)
-        
-        # Group by date
-        daily_stats = {}
-        for entry in history:
-            date = entry["timestamp"][:10]  # YYYY-MM-DD
-            if date not in daily_stats:
-                daily_stats[date] = {"count": 0, "healthy": 0, "diseases": {}}
-            
-            daily_stats[date]["count"] += 1
-            if "healthy" in entry["prediction"].lower():
-                daily_stats[date]["healthy"] += 1
-            else:
-                disease = entry["prediction"]
-                daily_stats[date]["diseases"][disease] = daily_stats[date]["diseases"].get(disease, 0) + 1
-        
-        # Convert to list and sort by date
-        daily_list = [
-            {"date": date, **stats}
-            for date, stats in sorted(daily_stats.items(), reverse=True)[:days]
-        ]
-        
-        return {
-            "success": True,
-            "daily_stats": daily_list,
-            "days": len(daily_list)
-        }
-        
-    except Exception as e:
-        print(f"❌ Get daily stats error: {e}")
-        raise HTTPException(status_code=500, detail=f"Error fetching daily stats: {str(e)}")
-
-# ========== SEARCH ENDPOINTS ==========
-@app.get("/search")
-async def search_history(
-    query: str = Query(..., min_length=2),
-    limit: int = Query(20, ge=1, le=50),
-    current_user: dict = Depends(get_current_user)
-):
-    """Search in user's history"""
-    try:
-        results = db.search_history(current_user["user_id"], query, limit)
-        
-        return {
-            "success": True,
-            "query": query,
-            "results": results,
-            "count": len(results)
-        }
-        
-    except Exception as e:
-        print(f"❌ Search error: {e}")
-        raise HTTPException(status_code=500, detail=f"Search error: {str(e)}")
-
-# ========== EXPORT ENDPOINTS ==========
-@app.get("/export/history")
-async def export_history(
-    format: str = Query("json", regex="^(json|csv)$"),
-    current_user: dict = Depends(get_current_user)
-):
-    """Export user history"""
-    try:
-        history = db.get_user_history(current_user["user_id"], limit=1000)
-        
-        if format == "csv":
-            # Generate CSV
-            import csv
-            import io
-            
-            output = io.StringIO()
-            writer = csv.DictWriter(output, fieldnames=[
-                "timestamp", "prediction", "confidence", "image_name", "model_type", "symptoms"
-            ])
-            
-            writer.writeheader()
-            for entry in history:
-                writer.writerow({
-                    "timestamp": entry["timestamp"],
-                    "prediction": entry["prediction"],
-                    "confidence": entry["confidence"],
-                    "image_name": entry["image_name"],
-                    "model_type": entry.get("model_type", "unknown"),
-                    "symptoms": ", ".join(entry.get("symptoms", []))
-                })
-            
-            csv_content = output.getvalue()
-            
-            return {
-                "success": True,
-                "format": "csv",
-                "data": csv_content,
-                "count": len(history)
-            }
-        else:
-            # JSON format
-            return {
-                "success": True,
-                "format": "json",
-                "data": history,
-                "count": len(history)
-            }
-        
-    except Exception as e:
-        print(f"❌ Export error: {e}")
-        raise HTTPException(status_code=500, detail=f"Export error: {str(e)}")
-
 # ========== STARTUP MESSAGE ==========
 print("\n" + "=" * 60)
 print("🐟 HEALTHYFINS API v5.0 - SUPABASE INTEGRATION")
 print("=" * 60)
 print(f"📡 Backend URL: https://healthyfins.onrender.com")
 print(f"🌐 Frontend URL: https://healthy-fins.vercel.app")
-print(f"💾 Database: {'Supabase' if db.supabase else 'Local JSON'}")
+print(f"💾 Database: {'Supabase + File' if db.is_supabase_available() else 'File Only'}")
 print(f"🔧 Hardware IDs: {len(db.get_hardware_ids())} available")
 print("=" * 60)
 
@@ -989,9 +892,9 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     print(f"🚀 Starting server on port {port}")
     uvicorn.run(
-        app,
+        "app:app",  # Use string reference for better compatibility
         host="0.0.0.0",
         port=port,
         log_level="info",
-        access_log=True
+        reload=False  # Set to False in production
     )
