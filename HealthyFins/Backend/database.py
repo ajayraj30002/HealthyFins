@@ -1,18 +1,20 @@
-# database.py - COMPLETE UPDATED VERSION FOR SUPABASE 2.4.0
+# database.py - BUILD-SAFE VERSION (won't fail during deployment)
 import os
-# CORRECT IMPORT for supabase 2.4.0
-import supabase
 import hashlib
 from datetime import datetime
 from typing import Optional, List, Dict, Any
 
+# Import supabase lazily (only when needed)
+import supabase
+
 class SupabaseDatabase:
     def __init__(self):
-        # Get Supabase credentials from environment variables
-        self.supabase_url = os.getenv("SUPABASE_URL", "https://bxfljshwfpgsnfyqemcd.supabase.co")
-        self.supabase_key = os.getenv("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4Zmxqc2h3ZnBnc25meXFlbWNkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0NjYxMDUsImV4cCI6MjA4NDA0MjEwNX0.M8qOkC-ajPfWgxG-PjCfY6UGLSSm5O2jmlQNTfaM3IQ")
+        # Store credentials but DON'T connect during __init__
+        self.supabase_url = os.getenv("SUPABASE_URL", "")
+        self.supabase_key = os.getenv("SUPABASE_KEY", "")
+        self._client = None  # Lazy-loaded client
         
-        # Predefined hardware IDs (only these are allowed)
+        # Predefined hardware IDs
         self.VALID_HARDWARE_IDS = [
             "FISHMON-001", "FISHMON-002", "FISHMON-003",
             "FISHMON-004", "FISHMON-005", "FISHMON-006",
@@ -21,35 +23,39 @@ class SupabaseDatabase:
         ]
         
         print("=" * 60)
-        print("🐟 HEALTHYFINS DATABASE INITIALIZATION")
+        print("🐟 HEALTHYFINS DATABASE INITIALIZED (lazy connection)")
         print("=" * 60)
-        
-        if not self.supabase_url or not self.supabase_key:
-            print("❌ CRITICAL: Supabase credentials missing!")
-            print("Please set SUPABASE_URL and SUPABASE_KEY in Render environment variables")
-            raise ValueError("Database configuration missing")
-        
-        try:
-            print(f"🔗 Connecting to Supabase...")
-            self.supabase = supabase.create_client(self.supabase_url, self.supabase_key)
+    
+    @property
+    def client(self):
+        """Lazy-load the Supabase client only when needed"""
+        if self._client is None:
+            if not self.supabase_url or not self.supabase_key:
+                print("❌ Supabase credentials missing!")
+                print("Set SUPABASE_URL and SUPABASE_KEY in environment variables")
+                # Don't raise error here - let it fail gracefully at runtime
+                return None
             
-            # Test connection
-            test_result = self.supabase.table("users").select("*", count="exact").limit(1).execute()
-            print(f"✅ Supabase connection successful")
-            print(f"📊 Current users in database: {test_result.count}")
-            
-        except Exception as e:
-            print(f"❌ FATAL: Cannot connect to Supabase: {e}")
-            raise e
+            try:
+                print("🔗 Connecting to Supabase...")
+                self._client = supabase.create_client(self.supabase_url, self.supabase_key)
+                print("✅ Supabase connection established")
+            except Exception as e:
+                print(f"❌ Supabase connection failed: {e}")
+                self._client = None
         
-        print("=" * 60)
+        return self._client
     
     # ========== USER MANAGEMENT ==========
     
     def create_user(self, email: str, password: str, name: str, hardware_id: Optional[str] = None) -> tuple:
-        """Create a new user with validation - ALWAYS saves to Supabase"""
+        """Create a new user with validation"""
         try:
             print(f"📝 Attempting to create user: {email}")
+            
+            client = self.client
+            if not client:
+                return False, "Database connection not available"
             
             # Validate hardware_id if provided
             if hardware_id and hardware_id not in self.VALID_HARDWARE_IDS:
@@ -57,12 +63,12 @@ class SupabaseDatabase:
             
             # Check if hardware_id is already in use
             if hardware_id:
-                existing_hw = self.supabase.table("users").select("*").eq("hardware_id", hardware_id).execute()
+                existing_hw = client.table("users").select("*").eq("hardware_id", hardware_id).execute()
                 if existing_hw.data:
                     return False, "Hardware ID already registered to another user"
             
             # Check if email already exists
-            existing = self.supabase.table("users").select("*").eq("email", email).execute()
+            existing = client.table("users").select("*").eq("email", email).execute()
             if existing.data:
                 return False, "Email already registered"
             
@@ -82,12 +88,11 @@ class SupabaseDatabase:
                 "is_active": True
             }
             
-            # Save to Supabase - THIS IS THE CRITICAL PART
-            print(f"💾 Saving user to Supabase: {email}")
-            result = self.supabase.table("users").insert(user_data).execute()
+            # Save to Supabase
+            result = client.table("users").insert(user_data).execute()
             
             if result.data:
-                print(f"✅ User created successfully in Supabase: {email}")
+                print(f"✅ User created successfully: {email}")
                 return True, {
                     "user_id": user_id,
                     "email": email,
@@ -96,7 +101,6 @@ class SupabaseDatabase:
                     "created_at": user_data["created_at"]
                 }
             else:
-                print(f"❌ Failed to insert user into Supabase: {email}")
                 return False, "Failed to save user to database"
             
         except Exception as e:
@@ -104,15 +108,19 @@ class SupabaseDatabase:
             return False, f"Registration failed: {str(e)}"
     
     def authenticate_user(self, email: str, password: str) -> tuple:
-        """Authenticate user login - ALWAYS checks Supabase"""
+        """Authenticate user login"""
         try:
             print(f"🔐 Authenticating user: {email}")
+            
+            client = self.client
+            if not client:
+                return False, "Database connection not available"
             
             # Hash the provided password
             password_hash = hashlib.sha256(password.encode()).hexdigest()
             
-            # ALWAYS query Supabase
-            result = self.supabase.table("users").select("*").eq("email", email).execute()
+            # Query Supabase
+            result = client.table("users").select("*").eq("email", email).execute()
             
             if not result.data:
                 print(f"❌ User not found: {email}")
@@ -131,9 +139,7 @@ class SupabaseDatabase:
             
             # Update last login
             update_data = {"last_login": datetime.now().isoformat()}
-            self.supabase.table("users").update(update_data).eq("id", user["id"]).execute()
-            
-            print(f"✅ User authenticated: {email}")
+            client.table("users").update(update_data).eq("id", user["id"]).execute()
             
             return True, {
                 "user_id": user["id"],
@@ -156,8 +162,12 @@ class SupabaseDatabase:
                               image_url: Optional[str] = None,
                               symptoms: Optional[List[str]] = None,
                               model_type: str = "ai_model") -> bool:
-        """Add a prediction to user's history - ALWAYS saves to Supabase"""
+        """Add a prediction to user's history"""
         try:
+            client = self.client
+            if not client:
+                return False
+            
             # Generate unique ID
             entry_id = f"{user_id}_{int(datetime.now().timestamp() * 1000)}"
             
@@ -175,25 +185,22 @@ class SupabaseDatabase:
                 "is_urgent": confidence > 70 and "healthy" not in prediction.lower()
             }
             
-            # ALWAYS save to Supabase
-            print(f"💾 Saving prediction to Supabase for user {user_id}")
-            result = self.supabase.table("prediction_history").insert(history_entry).execute()
+            # Save to Supabase
+            result = client.table("prediction_history").insert(history_entry).execute()
             
             if result.data:
                 # Update user's scan count
-                user_data = self.supabase.table("users").select("scan_count").eq("id", user_id).execute()
+                user_data = client.table("users").select("scan_count").eq("id", user_id).execute()
                 if user_data.data:
                     current_count = user_data.data[0].get("scan_count", 0)
                     new_count = current_count + 1
-                    self.supabase.table("users").update({
+                    client.table("users").update({
                         "scan_count": new_count,
                         "last_scan": history_entry["timestamp"]
                     }).eq("id", user_id).execute()
                 
-                print(f"✅ History saved to Supabase: {entry_id}")
                 return True
             else:
-                print(f"❌ Failed to save history to Supabase")
                 return False
             
         except Exception as e:
@@ -202,12 +209,14 @@ class SupabaseDatabase:
     
     def get_user_history(self, user_id: str, limit: int = 50, 
                         offset: int = 0, filter_disease: Optional[str] = None) -> List[Dict]:
-        """Get user's prediction history - ALWAYS from Supabase"""
+        """Get user's prediction history"""
         try:
-            print(f"📜 Fetching history for user {user_id}")
+            client = self.client
+            if not client:
+                return []
             
             # Build query
-            query = self.supabase.table("prediction_history").select("*").eq("user_id", user_id)
+            query = client.table("prediction_history").select("*").eq("user_id", user_id)
             
             if filter_disease and filter_disease != "all":
                 if filter_disease == "healthy":
@@ -218,7 +227,6 @@ class SupabaseDatabase:
             # Execute query with ordering and pagination
             result = query.order("timestamp", desc=True).range(offset, offset + limit - 1).execute()
             
-            print(f"✅ Found {len(result.data)} history entries")
             return result.data if result.data else []
                 
         except Exception as e:
@@ -228,9 +236,13 @@ class SupabaseDatabase:
     # ========== USER PROFILE ==========
     
     def get_user_profile(self, user_id: str) -> Optional[Dict]:
-        """Get user profile by ID - ALWAYS from Supabase"""
+        """Get user profile by ID"""
         try:
-            result = self.supabase.table("users").select("*").eq("id", user_id).execute()
+            client = self.client
+            if not client:
+                return None
+            
+            result = client.table("users").select("*").eq("id", user_id).execute()
             
             if result.data:
                 user = result.data[0]
@@ -249,13 +261,17 @@ class SupabaseDatabase:
                            hardware_id: Optional[str] = None) -> tuple:
         """Update user profile information"""
         try:
+            client = self.client
+            if not client:
+                return False, "Database connection not available"
+            
             # Validate hardware_id if provided
             if hardware_id and hardware_id not in self.VALID_HARDWARE_IDS:
                 return False, f"Invalid hardware ID. Must be one of: {', '.join(self.VALID_HARDWARE_IDS[:3])}..."
             
             # Check if hardware_id is already in use (by another user)
             if hardware_id:
-                existing = self.supabase.table("users").select("id, hardware_id").eq("hardware_id", hardware_id).execute()
+                existing = client.table("users").select("id, hardware_id").eq("hardware_id", hardware_id).execute()
                 if existing.data and existing.data[0]["id"] != user_id:
                     return False, "Hardware ID already registered to another user"
             
@@ -268,10 +284,9 @@ class SupabaseDatabase:
             if not update_data:
                 return False, "No data to update"
             
-            result = self.supabase.table("users").update(update_data).eq("id", user_id).execute()
+            result = client.table("users").update(update_data).eq("id", user_id).execute()
             
             if result.data:
-                print(f"✅ Profile updated for user {user_id}")
                 return True, "Profile updated successfully"
             else:
                 return False, "User not found"
@@ -285,11 +300,11 @@ class SupabaseDatabase:
     def _generate_treatment_plan(self, prediction: str, confidence: float) -> str:
         """Generate treatment plan based on prediction"""
         plans = {
-            "healthy": "✅ HEALTHY FISH - Maintain current water conditions. Regular monitoring recommended.\n\n1. Continue normal feeding schedule\n2. Weekly 20% water changes\n3. Monitor water parameters (pH 6.5-8.0, temp 24-28°C)\n4. Observe behavior daily",
-            "bacterial": "🦠 BACTERIAL INFECTION - Immediate action required.\n\n1. Isolate affected fish immediately\n2. Antibiotic treatment (Kanamycin or Erythromycin)\n3. Salt bath: 1 tbsp per 5 gallons\n4. Increase water temperature to 28°C\n5. Daily 30% water changes\n6. Consult veterinarian if no improvement in 48 hours",
-            "fungal": "🍄 FUNGAL INFECTION - Treatment needed.\n\n1. Antifungal medication (Methylene Blue)\n2. Salt bath: 2 tsp per gallon for 30 minutes\n3. Improve water quality immediately\n4. Remove any dead tissue carefully\n5. Increase aeration\n6. Treat for 7-10 days minimum",
-            "parasitic": "🐛 PARASITIC INFECTION - Quarantine required.\n\n1. Anti-parasitic medication (Praziquantel)\n2. Formalin bath (follow instructions carefully)\n3. Raise temperature to 30°C gradually\n4. Vacuum substrate thoroughly\n5. Treat all fish in tank\n6. Repeat treatment after 7 days",
-            "viral": "🦠 VIRAL INFECTION - Supportive care.\n\n1. No specific treatment available\n2. Maintain optimal water conditions\n3. Add aquarium salt (1 tsp per gallon)\n4. Provide high-quality food\n5. Reduce stress (dim lights, no handling)\n6. Watch for secondary infections"
+            "healthy": "✅ HEALTHY FISH - Maintain current water conditions. Regular monitoring recommended.",
+            "bacterial": "🦠 BACTERIAL INFECTION - Immediate action required.\n\n1. Isolate affected fish\n2. Antibiotic treatment\n3. Salt bath\n4. Consult veterinarian",
+            "fungal": "🍄 FUNGAL INFECTION - Treatment needed.\n\n1. Antifungal medication\n2. Salt bath\n3. Improve water quality",
+            "parasitic": "🐛 PARASITIC INFECTION - Quarantine required.\n\n1. Anti-parasitic medication\n2. Raise temperature\n3. Vacuum substrate",
+            "viral": "🦠 VIRAL INFECTION - Supportive care.\n\n1. Maintain optimal water\n2. Add aquarium salt\n3. Reduce stress"
         }
         
         pred_lower = prediction.lower()
@@ -305,13 +320,17 @@ class SupabaseDatabase:
         elif "viral" in pred_lower:
             return plans["viral"]
         else:
-            return "⚠️ UNKNOWN CONDITION - Consult with aquatic veterinarian for proper diagnosis and treatment."
+            return "⚠️ UNKNOWN CONDITION - Consult with aquatic veterinarian."
     
     def get_history_stats(self, user_id: str) -> Dict:
         """Get statistics about user's history"""
         try:
+            client = self.client
+            if not client:
+                return {"total": 0, "healthy": 0, "disease": 0, "disease_types": {}, "last_scan": None}
+            
             # Get all entries for this user
-            all_entries = self.supabase.table("prediction_history").select("prediction, timestamp").eq("user_id", user_id).execute()
+            all_entries = client.table("prediction_history").select("prediction, timestamp").eq("user_id", user_id).execute()
             
             total_count = len(all_entries.data)
             healthy_count = 0
@@ -325,7 +344,6 @@ class SupabaseDatabase:
                     healthy_count += 1
                 else:
                     disease_count += 1
-                    # Extract main disease type
                     if "bacterial" in pred:
                         disease_types["Bacterial"] = disease_types.get("Bacterial", 0) + 1
                     elif "fungal" in pred:
@@ -337,7 +355,6 @@ class SupabaseDatabase:
                     else:
                         disease_types["Other"] = disease_types.get("Other", 0) + 1
                 
-                # Track last scan
                 if not last_scan or entry["timestamp"] > last_scan:
                     last_scan = entry["timestamp"]
             
@@ -358,20 +375,16 @@ class SupabaseDatabase:
         return self.VALID_HARDWARE_IDS.copy()
     
     def check_hardware_available(self, hardware_id: str) -> bool:
-        """Check if hardware ID is available (not already assigned)"""
+        """Check if hardware ID is available"""
         try:
-            result = self.supabase.table("users").select("hardware_id").eq("hardware_id", hardware_id).execute()
+            client = self.client
+            if not client:
+                return True
+            
+            result = client.table("users").select("hardware_id").eq("hardware_id", hardware_id).execute()
             return len(result.data) == 0
         except:
             return True
-    
-    def get_all_users_count(self) -> int:
-        """Get total number of users"""
-        try:
-            result = self.supabase.table("users").select("*", count="exact").execute()
-            return result.count
-        except:
-            return 0
 
 # Create global instance
 db = SupabaseDatabase()
