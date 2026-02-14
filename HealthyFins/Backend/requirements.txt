@@ -13,7 +13,7 @@ Pillow==10.1.0
 pandas==2.0.3
 scikit-learn==1.3.2
 # CRITICAL: Use the correct package name and version
-supabase-py==1.0.0
+supabase==1.2.0
 postgrest==0.10.0
 gotrue==1.0.0
 realtime==1.0.0
