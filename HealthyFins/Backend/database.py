@@ -9,8 +9,8 @@ from typing import Optional, List, Dict, Any
 class SupabaseDatabase:
     def __init__(self):
         # Get Supabase credentials from environment variables
-        self.supabase_url = os.getenv("SUPABASE_URL", "")
-        self.supabase_key = os.getenv("SUPABASE_KEY", "")
+        self.supabase_url = os.getenv("SUPABASE_URL", "https://bxfljshwfpgsnfyqemcd.supabase.co")
+        self.supabase_key = os.getenv("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4Zmxqc2h3ZnBnc25meXFlbWNkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0NjYxMDUsImV4cCI6MjA4NDA0MjEwNX0.M8qOkC-ajPfWgxG-PjCfY6UGLSSm5O2jmlQNTfaM3IQ")
         
         # Predefined hardware IDs (only these are allowed)
         self.VALID_HARDWARE_IDS = [
@@ -571,3 +571,4 @@ print(f"📊 Database Type: {'Supabase' if db.supabase else 'Local JSON'}")
 print(f"🔧 Valid Hardware IDs: {len(db.VALID_HARDWARE_IDS)}")
 print(f"👥 Total Users: {db.get_all_users_count()}")
 print("=" * 50)
+
