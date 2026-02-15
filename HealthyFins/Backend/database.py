@@ -1,4 +1,4 @@
-# database.py - SIMPLE REST API VERSION (100% WORKING)
+# database.py - COMPLETE VERSION FOR RENDER
 import os
 import requests
 import hashlib
@@ -8,8 +8,13 @@ import uuid
 
 class SupabaseDatabase:
     def __init__(self):
+        # Get credentials from Render environment variables
         self.supabase_url = os.getenv("https://bxfljshwfpgsnfyqemcd.supabase.co")
         self.supabase_key = os.getenv("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4Zmxqc2h3ZnBnc25meXFlbWNkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0NjYxMDUsImV4cCI6MjA4NDA0MjEwNX0.M8qOkC-ajPfWgxG-PjCfY6UGLSSm5O2jmlQNTfaM3IQ")
+        
+        # Debug - remove after confirming
+        print(f"🔍 SUPABASE_URL from Render: {self.supabase_url}")
+        print(f"🔍 SUPABASE_KEY from Render: {self.supabase_key[:20] if self.supabase_key else 'None'}...")
         
         # Headers for REST API
         self.headers = {
@@ -28,6 +33,10 @@ class SupabaseDatabase:
         
         # Test connection
         try:
+            if not self.supabase_url or not self.supabase_key:
+                print("❌ Missing Supabase credentials in Render environment variables!")
+                return
+                
             response = requests.get(
                 f"{self.supabase_url}/rest/v1/users?limit=1",
                 headers=self.headers
@@ -342,12 +351,12 @@ class SupabaseDatabase:
     def _generate_treatment_plan(self, prediction: str, confidence: float) -> str:
         """Generate treatment plan based on prediction"""
         plans = {
-            "healthy": "✅ HEALTHY FISH - Maintain current water conditions...",
-            "bacterial": "🦠 BACTERIAL INFECTION - Immediate action required...",
-            "fungal": "🍄 FUNGAL INFECTION - Treatment needed...",
-            "parasitic": "🐛 PARASITIC INFECTION - Quarantine required...",
-            "viral": "🦠 VIRAL INFECTION - Supportive care...",
-            "default": "⚠️ UNKNOWN CONDITION - General care..."
+            "healthy": "✅ HEALTHY FISH - Maintain current water conditions. Regular monitoring recommended.\n\n1. Continue normal feeding schedule\n2. Weekly 20% water changes\n3. Monitor water parameters (pH 6.5-8.0, temp 24-28°C)\n4. Observe behavior daily",
+            "bacterial": "🦠 BACTERIAL INFECTION - Immediate action required.\n\n1. Isolate affected fish immediately\n2. Antibiotic treatment (Kanamycin or Erythromycin)\n3. Salt bath: 1 tbsp per 5 gallons\n4. Increase water temperature to 28°C\n5. Daily 30% water changes\n6. Consult veterinarian if no improvement in 48 hours",
+            "fungal": "🍄 FUNGAL INFECTION - Treatment needed.\n\n1. Antifungal medication (Methylene Blue)\n2. Salt bath: 2 tsp per gallon for 30 minutes\n3. Improve water quality immediately\n4. Remove any dead tissue carefully\n5. Increase aeration\n6. Treat for 7-10 days minimum",
+            "parasitic": "🐛 PARASITIC INFECTION - Quarantine required.\n\n1. Anti-parasitic medication (Praziquantel)\n2. Formalin bath (follow instructions carefully)\n3. Raise temperature to 30°C gradually\n4. Vacuum substrate thoroughly\n5. Treat all fish in tank\n6. Repeat treatment after 7 days",
+            "viral": "🦠 VIRAL INFECTION - Supportive care.\n\n1. No specific treatment available\n2. Maintain optimal water conditions\n3. Add aquarium salt (1 tsp per gallon)\n4. Provide high-quality food\n5. Reduce stress (dim lights, no handling)\n6. Watch for secondary infections",
+            "default": "⚠️ UNKNOWN CONDITION - General care.\n\n1. Quarantine affected fish\n2. Improve water quality (test parameters)\n3. Consult aquatic veterinarian\n4. Take clear photos for diagnosis\n5. Monitor symptoms closely"
         }
         
         pred_lower = prediction.lower()
