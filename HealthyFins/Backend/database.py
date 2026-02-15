@@ -400,3 +400,6 @@ class SupabaseDatabase:
         except Exception as e:
             print(f"❌ Get stats error: {e}")
             return {"total": 0, "healthy": 0, "disease": 0, "disease_types": {}, "last_scan": None, "avg_confidence": 0}
+        # Create global instance
+    db = SupabaseDatabase()  # Make sure this line exists!     
+
