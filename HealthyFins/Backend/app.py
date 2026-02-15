@@ -1,4 +1,4 @@
-# app.py - COMPLETE VERSION WITH SUPABASE
+# app.py - COMPLETE FIXED VERSION
 from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, Form, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -14,11 +14,15 @@ import traceback
 import warnings
 import h5py
 from pydantic import BaseModel
+import uuid
 
 # Import our modules
 sys.path.append('.')
 from database import db
 from auth import create_access_token, get_current_user
+
+# Get base directory for file paths
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Initialize app
 app = FastAPI(
@@ -103,7 +107,7 @@ def build_model_from_weights(model_path):
         
         # Recreate EXACT architecture
         model = tf.keras.Sequential([
-            tf.keras.layers.Input(shape=(224, 224, 3)),  # Use Input instead of InputLayer
+            tf.keras.layers.Input(shape=(224, 224, 3)),
             base_model,
             tf.keras.layers.GlobalAveragePooling2D(),
             tf.keras.layers.Dropout(0.3),
@@ -143,7 +147,7 @@ def simple_model_loader(model_path):
         model = tf.keras.models.load_model(
             model_path,
             compile=False,
-            safe_mode=False  # Disable safe mode for compatibility
+            safe_mode=False
         )
         
         return model, True
@@ -153,21 +157,23 @@ def simple_model_loader(model_path):
 
 @app.on_event("startup")
 async def load_model():
-    """Load AI model on startup - Compatibility fixes"""
+    """Load AI model on startup"""
     global model, class_names, reverse_label_map
     
     print("=" * 60)
-    print("🐟 HEALTHYFINS - LOADING MODEL (COMPATIBILITY MODE)")
+    print("🐟 HEALTHYFINS - LOADING MODEL")
     print("=" * 60)
     
-    model_path = 'models/fish_disease_model_final.h5'
-    info_path = 'models/model_info_final.json'
+    # Use absolute paths
+    model_path = os.path.join(BASE_DIR, 'models', 'fish_disease_model_final.h5')
+    info_path = os.path.join(BASE_DIR, 'models', 'model_info_final.json')
     
     # Check if files exist
     if not os.path.exists(model_path):
         print(f"❌ Model file not found: {model_path}")
         # Try other paths
         alternative_paths = [
+            os.path.join(BASE_DIR, 'fish_disease_model_final.h5'),
             'fish_disease_model_final.h5',
             './fish_disease_model_final.h5',
             '/opt/render/project/src/models/fish_disease_model_final.h5'
@@ -263,12 +269,7 @@ async def load_model():
                 # Build wrapper model
                 input_layer = tf.keras.layers.Input(shape=(224, 224, 3))
                 x = model(input_layer)
-                if predictions.shape[1] < len(class_names):
-                    # Pad outputs
-                    x = tf.keras.layers.Dense(len(class_names), activation='softmax')(x)
-                else:
-                    # Trim outputs
-                    x = tf.keras.layers.Dense(len(class_names), activation='softmax')(x)
+                x = tf.keras.layers.Dense(len(class_names), activation='softmax')(x)
                 
                 model = tf.keras.Model(inputs=input_layer, outputs=x)
                 print(f"✅ Wrapper created with {len(class_names)} outputs")
@@ -285,9 +286,8 @@ async def load_model():
         print(f"   Input: {model.input_shape}")
         print(f"   Output: {model.output_shape}")
     else:
-        print("⚠️ INTELLIGENT ANALYSIS MODE")
+        print("⚠️ USING ENHANCED ANALYSIS MODE")
         print(f"   Classes: {len(class_names)}")
-        print("   Note: Using enhanced image analysis instead of AI model")
     print("=" * 60)
 
 # ========== HEALTH CHECK ==========
@@ -301,8 +301,12 @@ async def root():
         "architecture": "MobileNetV2-based" if model is not None else "Enhanced Analysis"
     }
     
-    # Get available hardware IDs
-    hardware_ids = db.get_hardware_ids()
+    # Get available hardware IDs safely
+    hardware_ids = []
+    try:
+        hardware_ids = db.get_hardware_ids()
+    except:
+        hardware_ids = []
     
     return {
         "message": "🐟 HealthyFins API",
@@ -310,9 +314,9 @@ async def root():
         "version": "5.0.0",
         "frontend": "https://healthy-fins.vercel.app",
         "model": model_status,
-        "database": "supabase" if db.supabase else "local",
+        "database": "supabase" if db and db.supabase else "local",
         "hardware": {
-            "available_ids": hardware_ids[:5],  # Show first 5
+            "available_ids": hardware_ids[:5],
             "total_available": len(hardware_ids)
         },
         "timestamp": datetime.now().isoformat(),
@@ -336,9 +340,9 @@ async def health_check():
     }
     
     database_info = {
-        "type": "supabase" if db.supabase else "local",
-        "status": "connected" if db.supabase else "local_mode",
-        "hardware_ids": len(db.get_hardware_ids())
+        "type": "supabase" if db and db.supabase else "local",
+        "status": "connected" if db and db.supabase else "local_mode",
+        "hardware_ids": len(db.get_hardware_ids()) if db else 0
     }
     
     return {
@@ -394,8 +398,11 @@ async def register_user(
         if not success:
             raise HTTPException(status_code=400, detail=result)
         
-        # Create access token
-        access_token = create_access_token(data={"sub": email, "user_id": result["user_id"]})
+        # Create access token with user_id
+        access_token = create_access_token(data={
+            "sub": email, 
+            "user_id": result["user_id"]
+        })
         
         print(f"✅ User registered: {email} (ID: {result['user_id']})")
         
@@ -411,6 +418,7 @@ async def register_user(
         raise
     except Exception as e:
         print(f"❌ Registration error: {str(e)}")
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Registration error: {str(e)}")
 
 @app.post("/login")
@@ -427,8 +435,11 @@ async def login_user(
         if not success:
             raise HTTPException(status_code=401, detail=result)
         
-        # Create access token
-        access_token = create_access_token(data={"sub": email, "user_id": result["user_id"]})
+        # Create access token with user_id
+        access_token = create_access_token(data={
+            "sub": email, 
+            "user_id": result["user_id"]
+        })
         
         print(f"✅ User logged in: {email}")
         
@@ -444,6 +455,7 @@ async def login_user(
         raise
     except Exception as e:
         print(f"❌ Login error: {str(e)}")
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Login error: {str(e)}")
 
 # ========== IMAGE PREPROCESSING ==========
@@ -461,10 +473,10 @@ def preprocess_image_exact_colab(image_bytes):
         # 1. Convert BGR to RGB
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         
-        # 2. Resize to 224x224 (from your Colab code)
+        # 2. Resize to 224x224
         img = cv2.resize(img, (224, 224))
         
-        # 3. Normalize to [0, 1] - EXACT as Colab
+        # 3. Normalize to [0, 1]
         img = img.astype('float32') / 255.0
         
         # 4. Expand dimensions for batch
@@ -679,7 +691,7 @@ def detect_symptoms(image_array, disease_name):
         print(f"❌ Symptom detection error: {e}")
         symptoms = ["Visual inspection recommended"]
     
-    return symptoms[:5]  # Return top 5 symptoms
+    return symptoms[:5]
 
 # ========== PROFILE ENDPOINTS ==========
 @app.get("/profile")
@@ -704,6 +716,7 @@ async def get_profile(current_user: dict = Depends(get_current_user)):
         raise
     except Exception as e:
         print(f"❌ Get profile error: {e}")
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Error fetching profile: {str(e)}")
 
 @app.put("/profile")
@@ -732,6 +745,7 @@ async def update_profile(
         raise
     except Exception as e:
         print(f"❌ Update profile error: {e}")
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Error updating profile: {str(e)}")
 
 # ========== HISTORY ENDPOINTS ==========
@@ -771,6 +785,7 @@ async def get_history(
         
     except Exception as e:
         print(f"❌ Get history error: {e}")
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Error fetching history: {str(e)}")
 
 @app.get("/history/{entry_id}")
@@ -797,6 +812,7 @@ async def get_history_entry(
         raise
     except Exception as e:
         print(f"❌ Get history entry error: {e}")
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Error fetching history entry: {str(e)}")
 
 @app.delete("/history/{entry_id}")
@@ -820,6 +836,7 @@ async def delete_history_entry(
         raise
     except Exception as e:
         print(f"❌ Delete history error: {e}")
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Error deleting history: {str(e)}")
 
 @app.delete("/history")
@@ -840,6 +857,7 @@ async def clear_all_history(current_user: dict = Depends(get_current_user)):
         raise
     except Exception as e:
         print(f"❌ Clear history error: {e}")
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Error clearing history: {str(e)}")
 
 # ========== STATISTICS ENDPOINTS ==========
@@ -857,6 +875,7 @@ async def get_user_stats(current_user: dict = Depends(get_current_user)):
         
     except Exception as e:
         print(f"❌ Get stats error: {e}")
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Error fetching stats: {str(e)}")
 
 @app.get("/stats/daily")
@@ -866,8 +885,6 @@ async def get_daily_stats(
 ):
     """Get daily statistics"""
     try:
-        # This would be implemented with proper date filtering in Supabase
-        # For now, return mock data
         history = db.get_user_history(current_user["user_id"], limit=100)
         
         # Group by date
@@ -898,6 +915,7 @@ async def get_daily_stats(
         
     except Exception as e:
         print(f"❌ Get daily stats error: {e}")
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Error fetching daily stats: {str(e)}")
 
 # ========== SEARCH ENDPOINTS ==========
@@ -920,6 +938,7 @@ async def search_history(
         
     except Exception as e:
         print(f"❌ Search error: {e}")
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Search error: {str(e)}")
 
 # ========== EXPORT ENDPOINTS ==========
@@ -972,6 +991,7 @@ async def export_history(
         
     except Exception as e:
         print(f"❌ Export error: {e}")
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Export error: {str(e)}")
 
 # ========== STARTUP MESSAGE ==========
@@ -980,8 +1000,8 @@ print("🐟 HEALTHYFINS API v5.0 - SUPABASE INTEGRATION")
 print("=" * 60)
 print(f"📡 Backend URL: https://healthyfins.onrender.com")
 print(f"🌐 Frontend URL: https://healthy-fins.vercel.app")
-print(f"💾 Database: {'Supabase' if db.supabase else 'Local JSON'}")
-print(f"🔧 Hardware IDs: {len(db.get_hardware_ids())} available")
+print(f"💾 Database: {'Supabase' if db and db.supabase else 'Local JSON'}")
+print(f"🔧 Hardware IDs: {len(db.get_hardware_ids()) if db else 0} available")
 print("=" * 60)
 
 if __name__ == "__main__":
