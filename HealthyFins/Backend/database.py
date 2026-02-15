@@ -1,4 +1,4 @@
-# database.py - COMPLETE VERSION FOR RENDER
+# database.py - COMPLETE VERSION WITH DEBUGGING
 import os
 import requests
 import hashlib
@@ -8,13 +8,71 @@ import uuid
 
 class SupabaseDatabase:
     def __init__(self):
-        # Get credentials from Render environment variables
-        self.supabase_url = os.getenv("https://bxfljshwfpgsnfyqemcd.supabase.co")
-        self.supabase_key = os.getenv("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4Zmxqc2h3ZnBnc25meXFlbWNkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0NjYxMDUsImV4cCI6MjA4NDA0MjEwNX0.M8qOkC-ajPfWgxG-PjCfY6UGLSSm5O2jmlQNTfaM3IQ")
+        # DEBUG: Print all environment variable names (not values for security)
+        print("=" * 60)
+        print("🔍 ENVIRONMENT VARIABLES DEBUG")
+        print("=" * 60)
         
-        # Debug - remove after confirming
-        print(f"🔍 SUPABASE_URL from Render: {self.supabase_url}")
-        print(f"🔍 SUPABASE_KEY from Render: {self.supabase_key[:20] if self.supabase_key else 'None'}...")
+        # Get all environment variable keys
+        env_keys = list(os.environ.keys())
+        print(f"Total environment variables: {len(env_keys)}")
+        print(f"First 10 env vars: {env_keys[:10]}")
+        
+        # Specifically check for Supabase variables
+        print("\n🔍 Checking for Supabase variables:")
+        
+        # Try different possible names
+        possible_url_names = ["SUPABASE_URL", "SUPABASEURL", "SUPABASE_URL", "SupabaseUrl", "supabase_url"]
+        possible_key_names = ["SUPABASE_KEY", "SUPABASEKEY", "SUPABASE_KEY", "SupabaseKey", "supabase_key", "ANON_KEY", "SUPABASE_ANON_KEY"]
+        
+        self.supabase_url = None
+        self.supabase_key = None
+        
+        # Try to find URL
+        for name in possible_url_names:
+            value = os.getenv(name)
+            if value:
+                print(f"✅ Found URL using: {name}")
+                self.supabase_url = value
+                break
+            else:
+                print(f"❌ Not found: {name}")
+        
+        # Try to find KEY
+        for name in possible_key_names:
+            value = os.getenv(name)
+            if value:
+                print(f"✅ Found KEY using: {name}")
+                self.supabase_key = value
+                break
+            else:
+                print(f"❌ Not found: {name}")
+        
+        # If still not found, try direct os.environ access
+        if not self.supabase_url:
+            for key in os.environ:
+                if 'url' in key.lower() and 'supa' in key.lower():
+                    self.supabase_url = os.environ[key]
+                    print(f"✅ Found URL via search: {key}")
+                    break
+        
+        if not self.supabase_key:
+            for key in os.environ:
+                if ('key' in key.lower() or 'anon' in key.lower()) and 'supa' in key.lower():
+                    self.supabase_key = os.environ[key]
+                    print(f"✅ Found KEY via search: {key}")
+                    break
+        
+        # Final check
+        print(f"\n🔍 FINAL VALUES:")
+        print(f"SUPABASE_URL: {self.supabase_url[:30] if self.supabase_url else 'None'}...")
+        print(f"SUPABASE_KEY: {self.supabase_key[:20] if self.supabase_key else 'None'}...")
+        
+        # HARDCODE FALLBACK - Use this if env vars still not found
+        if not self.supabase_url or not self.supabase_key:
+            print("\n⚠️ USING HARDCODED FALLBACK VALUES")
+            self.supabase_url = "https://bxfljshwfpgsnfyqemcd.supabase.co"
+            self.supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4Zmxqc2h3ZnBnc25meXFlbWNkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0NjYxMDUsImV4cCI6MjA4NDA0MjEwNX0.M8qOkC-ajPfWgxG-PjCfY6UGLSSm5O2jmlQNTfaM3IQ"
         
         # Headers for REST API
         self.headers = {
@@ -34,7 +92,7 @@ class SupabaseDatabase:
         # Test connection
         try:
             if not self.supabase_url or not self.supabase_key:
-                print("❌ Missing Supabase credentials in Render environment variables!")
+                print("❌ Missing Supabase credentials!")
                 return
                 
             response = requests.get(
@@ -47,6 +105,7 @@ class SupabaseDatabase:
                 print(f"⚠️ Connection test failed: {response.status_code}")
         except Exception as e:
             print(f"❌ Connection failed: {e}")
+        print("=" * 60)
     
     def create_user(self, email: str, password: str, name: str, hardware_id: Optional[str] = None) -> tuple:
         """Create a new user"""
