@@ -12,4 +12,4 @@ h5py==3.8.0
 Pillow==10.1.0
 pandas==2.0.3
 scikit-learn==1.3.2
-supabase==2.4.0  # Correct, working version
+supabase==2.5.0  # Latest version
