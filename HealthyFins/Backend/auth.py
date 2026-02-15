@@ -1,3 +1,4 @@
+# auth.py
 import jwt
 import os
 from datetime import datetime, timedelta
@@ -40,4 +41,9 @@ async def get_current_user(authorization: Optional[str] = Header(None)):
         raise HTTPException(status_code=401, detail="Token missing")
     
     payload = verify_token(token)
+    
+    # Ensure we have both email and user_id
+    if "sub" not in payload or "user_id" not in payload:
+        raise HTTPException(status_code=401, detail="Invalid token payload")
+    
     return payload
