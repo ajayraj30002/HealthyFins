@@ -997,12 +997,12 @@ async def export_history(
         raise HTTPException(status_code=500, detail=f"Export error: {str(e)}")
 
 # ========== STARTUP MESSAGE ==========
-print("\n" + "=" * 60)
+print("=" * 60)
 print("🐟 HEALTHYFINS API v5.0 - SUPABASE INTEGRATION")
 print("=" * 60)
 print(f"📡 Backend URL: https://healthyfins.onrender.com")
 print(f"🌐 Frontend URL: https://healthy-fins.vercel.app")
-print(f"💾 Database: {'Supabase' if db and db.supabase else 'Local JSON'}")
+print(f"💾 Database: Supabase REST API")  # ← CHANGED
 print(f"🔧 Hardware IDs: {len(db.get_hardware_ids()) if db else 0} available")
 print("=" * 60)
 
