@@ -12,5 +12,4 @@ h5py==3.8.0
 Pillow==10.1.0
 pandas==2.0.3
 scikit-learn==1.3.2
-# CRITICAL: Use the correct package name and version
-requests==2.31.0  # For direct Supabase API calls
+supabase==2.4.0  # Correct, working version
