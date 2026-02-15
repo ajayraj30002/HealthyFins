@@ -1,11 +1,9 @@
-# app.py - FIXED IMPORTS
-import sys
+# app.py - SIMPLIFIED IMPORTS
 import os
+import sys
 
-# Add current directory to path
-current_dir = os.path.dirname(os.path.abspath(__file__))
-if current_dir not in sys.path:
-    sys.path.insert(0, current_dir)
+# Add the current directory to path - THIS IS THE KEY!
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, Form, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,28 +11,17 @@ import tensorflow as tf
 import numpy as np
 import cv2
 import json
-import sys
 from datetime import datetime
 from typing import Optional, List
 import traceback
 import uuid
 from pydantic import BaseModel
 
-# Now import your modules
-try:
-    from database import db
-    print("✅ Imported db from database")
-except ImportError as e:
-    print(f"❌ First import failed: {e}")
-    try:
-        from HealthyFins.Backend.database import db
-        print("✅ Imported from HealthyFins.Backend.database")
-    except ImportError as e:
-        print(f"❌ Second import failed: {e}")
-        sys.path.append(os.path.join(current_dir, '..'))
-        from HealthyFins.Backend.database import db
-
+# Simple direct import - no paths needed!
+from database import db
 from auth import create_access_token, get_current_user
+
+print(f"✅ Successfully imported db: {db}")
 
 # Get base directory for file paths
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
