@@ -1,4 +1,4 @@
-# database.py - COMPLETE VERSION WITH DEBUGGING
+# database.py - COMPLETE FIXED VERSION
 import os
 import requests
 import hashlib
@@ -8,71 +8,22 @@ import uuid
 
 class SupabaseDatabase:
     def __init__(self):
-        # DEBUG: Print all environment variable names (not values for security)
-        print("=" * 60)
-        print("🔍 ENVIRONMENT VARIABLES DEBUG")
-        print("=" * 60)
+        # Get credentials from environment variables
+        self.supabase_url = os.getenv("https://bxfljshwfpgsnfyqemcd.supabase.co")
+        self.supabase_key = os.getenv("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4Zmxqc2h3ZnBnc25meXFlbWNkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0NjYxMDUsImV4cCI6MjA4NDA0MjEwNX0.M8qOkC-ajPfWgxG-PjCfY6UGLSSm5O2jmlQNTfaM3IQ")
         
-        # Get all environment variable keys
-        env_keys = list(os.environ.keys())
-        print(f"Total environment variables: {len(env_keys)}")
-        print(f"First 10 env vars: {env_keys[:10]}")
+        # Debug
+        print(f"🔍 SUPABASE_URL: {self.supabase_url}")
+        print(f"🔍 SUPABASE_KEY: {self.supabase_key[:20] if self.supabase_key else 'None'}...")
         
-        # Specifically check for Supabase variables
-        print("\n🔍 Checking for Supabase variables:")
-        
-        # Try different possible names
-        possible_url_names = ["SUPABASE_URL", "SUPABASEURL", "SUPABASE_URL", "SupabaseUrl", "supabase_url"]
-        possible_key_names = ["SUPABASE_KEY", "SUPABASEKEY", "SUPABASE_KEY", "SupabaseKey", "supabase_key", "ANON_KEY", "SUPABASE_ANON_KEY"]
-        
-        self.supabase_url = None
-        self.supabase_key = None
-        
-        # Try to find URL
-        for name in possible_url_names:
-            value = os.getenv(name)
-            if value:
-                print(f"✅ Found URL using: {name}")
-                self.supabase_url = value
-                break
-            else:
-                print(f"❌ Not found: {name}")
-        
-        # Try to find KEY
-        for name in possible_key_names:
-            value = os.getenv(name)
-            if value:
-                print(f"✅ Found KEY using: {name}")
-                self.supabase_key = value
-                break
-            else:
-                print(f"❌ Not found: {name}")
-        
-        # If still not found, try direct os.environ access
-        if not self.supabase_url:
-            for key in os.environ:
-                if 'url' in key.lower() and 'supa' in key.lower():
-                    self.supabase_url = os.environ[key]
-                    print(f"✅ Found URL via search: {key}")
-                    break
-        
-        if not self.supabase_key:
-            for key in os.environ:
-                if ('key' in key.lower() or 'anon' in key.lower()) and 'supa' in key.lower():
-                    self.supabase_key = os.environ[key]
-                    print(f"✅ Found KEY via search: {key}")
-                    break
-        
-        # Final check
-        print(f"\n🔍 FINAL VALUES:")
-        print(f"SUPABASE_URL: {self.supabase_url[:30] if self.supabase_url else 'None'}...")
-        print(f"SUPABASE_KEY: {self.supabase_key[:20] if self.supabase_key else 'None'}...")
-        
-        # HARDCODE FALLBACK - Use this if env vars still not found
-        if not self.supabase_url or not self.supabase_key:
-            print("\n⚠️ USING HARDCODED FALLBACK VALUES")
+        # Hardcode fallback if env vars not found
+        if not self.supabase_url or self.supabase_url == "None":
             self.supabase_url = "https://bxfljshwfpgsnfyqemcd.supabase.co"
+            print("⚠️ Using hardcoded URL")
+        
+        if not self.supabase_key or self.supabase_key == "None":
             self.supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4Zmxqc2h3ZnBnc25meXFlbWNkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0NjYxMDUsImV4cCI6MjA4NDA0MjEwNX0.M8qOkC-ajPfWgxG-PjCfY6UGLSSm5O2jmlQNTfaM3IQ"
+            print("⚠️ Using hardcoded KEY")
         
         # Headers for REST API
         self.headers = {
@@ -105,107 +56,102 @@ class SupabaseDatabase:
                 print(f"⚠️ Connection test failed: {response.status_code}")
         except Exception as e:
             print(f"❌ Connection failed: {e}")
-        print("=" * 60)
     
     def create_user(self, email: str, password: str, name: str, hardware_id: Optional[str] = None) -> tuple:
-    """Create a new user"""
-    try:
-        # Check if user exists
-        response = requests.get(
-            f"{self.supabase_url}/rest/v1/users",
-            headers=self.headers,
-            params={"email": f"eq.{email}"}
-        )
-        
-        if response.status_code == 200 and response.json():
-            return False, "Email already exists"
-        
-        # Create user - WITHOUT is_active
-        user_id = str(uuid.uuid4())[:12]
-        password_hash = hashlib.sha256(password.encode()).hexdigest()
-        
-        user_data = {
-            "id": user_id,
-            "email": email,
-            "name": name,
-            "password_hash": password_hash,
-            "hardware_id": hardware_id,
-            "created_at": datetime.now().isoformat(),
-            "last_login": datetime.now().isoformat(),
-            "scan_count": 0
-            # "is_active": True  ← REMOVED
-        }
-        
-        response = requests.post(
-            f"{self.supabase_url}/rest/v1/users",
-            headers=self.headers,
-            json=user_data
-        )
-        
-        if response.status_code in [200, 201]:
-            print(f"✅ User created: {email}")
-            return True, {
-                "user_id": user_id,
+        """Create a new user"""
+        try:
+            # Check if user exists
+            response = requests.get(
+                f"{self.supabase_url}/rest/v1/users",
+                headers=self.headers,
+                params={"email": f"eq.{email}"}
+            )
+            
+            if response.status_code == 200 and response.json():
+                return False, "Email already exists"
+            
+            # Create user
+            user_id = str(uuid.uuid4())[:12]
+            password_hash = hashlib.sha256(password.encode()).hexdigest()
+            
+            user_data = {
+                "id": user_id,
                 "email": email,
                 "name": name,
+                "password_hash": password_hash,
                 "hardware_id": hardware_id,
-                "created_at": user_data["created_at"]
+                "created_at": datetime.now().isoformat(),
+                "last_login": datetime.now().isoformat(),
+                "scan_count": 0
             }
-        else:
-            return False, f"Failed to create user: {response.text}"
             
-    except Exception as e:
-        print(f"❌ Create user error: {e}")
-        return False, f"Registration failed: {str(e)}"
+            response = requests.post(
+                f"{self.supabase_url}/rest/v1/users",
+                headers=self.headers,
+                json=user_data
+            )
+            
+            if response.status_code in [200, 201]:
+                print(f"✅ User created: {email}")
+                return True, {
+                    "user_id": user_id,
+                    "email": email,
+                    "name": name,
+                    "hardware_id": hardware_id,
+                    "created_at": user_data["created_at"]
+                }
+            else:
+                error_msg = response.text if hasattr(response, 'text') else "Unknown error"
+                return False, f"Failed to create user: {error_msg}"
+                
+        except Exception as e:
+            print(f"❌ Create user error: {e}")
+            return False, f"Registration failed: {str(e)}"
     
     def authenticate_user(self, email: str, password: str) -> tuple:
-    """Authenticate user login"""
-    try:
-        password_hash = hashlib.sha256(password.encode()).hexdigest()
-        
-        response = requests.get(
-            f"{self.supabase_url}/rest/v1/users",
-            headers=self.headers,
-            params={"email": f"eq.{email}"}
-        )
-        
-        if response.status_code != 200:
-            return False, "Invalid email or password"
-        
-        users = response.json()
-        if not users:
-            return False, "Invalid email or password"
-        
-        user = users[0]
-        
-        if user["password_hash"] != password_hash:
-            return False, "Invalid email or password"
-        
-        # Remove this is_active check:
-        # if not user.get("is_active", True):
-        #     return False, "Account is deactivated"
-        
-        # Update last login
-        requests.patch(
-            f"{self.supabase_url}/rest/v1/users",
-            headers=self.headers,
-            params={"id": f"eq.{user['id']}"},
-            json={"last_login": datetime.now().isoformat()}
-        )
-        
-        return True, {
-            "user_id": user["id"],
-            "email": user["email"],
-            "name": user["name"],
-            "hardware_id": user.get("hardware_id", ""),
-            "created_at": user["created_at"],
-            "scan_count": user.get("scan_count", 0),
-            "last_login": datetime.now().isoformat()
-        }
-        
-    except Exception as e:
-        print(f"❌ Authentication error: {e}")
-        return False, f"Authentication failed: {str(e)}"
+        """Authenticate user login"""
+        try:
+            password_hash = hashlib.sha256(password.encode()).hexdigest()
+            
+            response = requests.get(
+                f"{self.supabase_url}/rest/v1/users",
+                headers=self.headers,
+                params={"email": f"eq.{email}"}
+            )
+            
+            if response.status_code != 200:
+                return False, "Invalid email or password"
+            
+            users = response.json()
+            if not users:
+                return False, "Invalid email or password"
+            
+            user = users[0]
+            
+            if user["password_hash"] != password_hash:
+                return False, "Invalid email or password"
+            
+            # Update last login
+            requests.patch(
+                f"{self.supabase_url}/rest/v1/users",
+                headers=self.headers,
+                params={"id": f"eq.{user['id']}"},
+                json={"last_login": datetime.now().isoformat()}
+            )
+            
+            return True, {
+                "user_id": user["id"],
+                "email": user["email"],
+                "name": user["name"],
+                "hardware_id": user.get("hardware_id", ""),
+                "created_at": user["created_at"],
+                "scan_count": user.get("scan_count", 0),
+                "last_login": datetime.now().isoformat()
+            }
+            
+        except Exception as e:
+            print(f"❌ Authentication error: {e}")
+            return False, f"Authentication failed: {str(e)}"
     
     def add_prediction_history(self, user_id: str, image_name: str, 
                               prediction: str, confidence: float, 
@@ -514,7 +460,5 @@ print("=" * 50)
 db = SupabaseDatabase()
 
 print(f"📊 Database Type: Supabase REST API")
-print(f"🔧 Valid Hardware IDs: {len(db.VALID_HARDWARE_IDS)}")
+print(f"🔧 Valid Hardware IDs: {len(db.VALID_HARDWARE_IDS) if db else 0}")
 print("=" * 50)
-
-
