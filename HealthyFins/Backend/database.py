@@ -159,49 +159,53 @@ class SupabaseDatabase:
         return False, f"Registration failed: {str(e)}"
     
     def authenticate_user(self, email: str, password: str) -> tuple:
-        """Authenticate user login"""
-        try:
-            password_hash = hashlib.sha256(password.encode()).hexdigest()
-            
-            response = requests.get(
-                f"{self.supabase_url}/rest/v1/users",
-                headers=self.headers,
-                params={"email": f"eq.{email}"}
-            )
-            
-            if response.status_code != 200:
-                return False, "Invalid email or password"
-            
-            users = response.json()
-            if not users:
-                return False, "Invalid email or password"
-            
-            user = users[0]
-            
-            if user["password_hash"] != password_hash:
-                return False, "Invalid email or password"
-            
-            # Update last login
-            requests.patch(
-                f"{self.supabase_url}/rest/v1/users",
-                headers=self.headers,
-                params={"id": f"eq.{user['id']}"},
-                json={"last_login": datetime.now().isoformat()}
-            )
-            
-            return True, {
-                "user_id": user["id"],
-                "email": user["email"],
-                "name": user["name"],
-                "hardware_id": user.get("hardware_id", ""),
-                "created_at": user["created_at"],
-                "scan_count": user.get("scan_count", 0),
-                "last_login": datetime.now().isoformat()
-            }
-            
-        except Exception as e:
-            print(f"❌ Authentication error: {e}")
-            return False, f"Authentication failed: {str(e)}"
+    """Authenticate user login"""
+    try:
+        password_hash = hashlib.sha256(password.encode()).hexdigest()
+        
+        response = requests.get(
+            f"{self.supabase_url}/rest/v1/users",
+            headers=self.headers,
+            params={"email": f"eq.{email}"}
+        )
+        
+        if response.status_code != 200:
+            return False, "Invalid email or password"
+        
+        users = response.json()
+        if not users:
+            return False, "Invalid email or password"
+        
+        user = users[0]
+        
+        if user["password_hash"] != password_hash:
+            return False, "Invalid email or password"
+        
+        # Remove this is_active check:
+        # if not user.get("is_active", True):
+        #     return False, "Account is deactivated"
+        
+        # Update last login
+        requests.patch(
+            f"{self.supabase_url}/rest/v1/users",
+            headers=self.headers,
+            params={"id": f"eq.{user['id']}"},
+            json={"last_login": datetime.now().isoformat()}
+        )
+        
+        return True, {
+            "user_id": user["id"],
+            "email": user["email"],
+            "name": user["name"],
+            "hardware_id": user.get("hardware_id", ""),
+            "created_at": user["created_at"],
+            "scan_count": user.get("scan_count", 0),
+            "last_login": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        print(f"❌ Authentication error: {e}")
+        return False, f"Authentication failed: {str(e)}"
     
     def add_prediction_history(self, user_id: str, image_name: str, 
                               prediction: str, confidence: float, 
@@ -512,4 +516,5 @@ db = SupabaseDatabase()
 print(f"📊 Database Type: Supabase REST API")
 print(f"🔧 Valid Hardware IDs: {len(db.VALID_HARDWARE_IDS)}")
 print("=" * 50)
+
 
