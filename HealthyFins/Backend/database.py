@@ -108,55 +108,55 @@ class SupabaseDatabase:
         print("=" * 60)
     
     def create_user(self, email: str, password: str, name: str, hardware_id: Optional[str] = None) -> tuple:
-        """Create a new user"""
-        try:
-            # Check if user exists
-            response = requests.get(
-                f"{self.supabase_url}/rest/v1/users",
-                headers=self.headers,
-                params={"email": f"eq.{email}"}
-            )
-            
-            if response.status_code == 200 and response.json():
-                return False, "Email already exists"
-            
-            # Create user
-            user_id = str(uuid.uuid4())[:12]
-            password_hash = hashlib.sha256(password.encode()).hexdigest()
-            
-            user_data = {
-                "id": user_id,
+    """Create a new user"""
+    try:
+        # Check if user exists
+        response = requests.get(
+            f"{self.supabase_url}/rest/v1/users",
+            headers=self.headers,
+            params={"email": f"eq.{email}"}
+        )
+        
+        if response.status_code == 200 and response.json():
+            return False, "Email already exists"
+        
+        # Create user - WITHOUT is_active
+        user_id = str(uuid.uuid4())[:12]
+        password_hash = hashlib.sha256(password.encode()).hexdigest()
+        
+        user_data = {
+            "id": user_id,
+            "email": email,
+            "name": name,
+            "password_hash": password_hash,
+            "hardware_id": hardware_id,
+            "created_at": datetime.now().isoformat(),
+            "last_login": datetime.now().isoformat(),
+            "scan_count": 0
+            # "is_active": True  ← REMOVED
+        }
+        
+        response = requests.post(
+            f"{self.supabase_url}/rest/v1/users",
+            headers=self.headers,
+            json=user_data
+        )
+        
+        if response.status_code in [200, 201]:
+            print(f"✅ User created: {email}")
+            return True, {
+                "user_id": user_id,
                 "email": email,
                 "name": name,
-                "password_hash": password_hash,
                 "hardware_id": hardware_id,
-                "created_at": datetime.now().isoformat(),
-                "last_login": datetime.now().isoformat(),
-                "scan_count": 0,
-                "is_active": True
+                "created_at": user_data["created_at"]
             }
+        else:
+            return False, f"Failed to create user: {response.text}"
             
-            response = requests.post(
-                f"{self.supabase_url}/rest/v1/users",
-                headers=self.headers,
-                json=user_data
-            )
-            
-            if response.status_code in [200, 201]:
-                print(f"✅ User created: {email}")
-                return True, {
-                    "user_id": user_id,
-                    "email": email,
-                    "name": name,
-                    "hardware_id": hardware_id,
-                    "created_at": user_data["created_at"]
-                }
-            else:
-                return False, f"Failed to create user: {response.text}"
-                
-        except Exception as e:
-            print(f"❌ Create user error: {e}")
-            return False, f"Registration failed: {str(e)}"
+    except Exception as e:
+        print(f"❌ Create user error: {e}")
+        return False, f"Registration failed: {str(e)}"
     
     def authenticate_user(self, email: str, password: str) -> tuple:
         """Authenticate user login"""
@@ -512,3 +512,4 @@ db = SupabaseDatabase()
 print(f"📊 Database Type: Supabase REST API")
 print(f"🔧 Valid Hardware IDs: {len(db.VALID_HARDWARE_IDS)}")
 print("=" * 50)
+
