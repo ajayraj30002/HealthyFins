@@ -82,22 +82,22 @@ Designed for fish farmers, aquarium hobbyists, and aquaculture researchers, it p
 ---
 
 ## 💻 Tech Stack
-Frontend: HTML5, CSS3, Vanilla JavaScript hosted on Vercel with Chart.js for sensor data visualization
-Backend: Python 3.9, Flask 2.3.3, TensorFlow 2.15, MobileNetV2, JWT authentication hosted on Render
-Database: Supabase PostgreSQL with Row Level Security for user profiles, predictions, and sensor readings
-Hardware: Raspberry Pi 4 with pH sensor (Analog pH Meter V2) and temperature sensor (DS18B20)
+-Frontend: HTML5, CSS3, Vanilla JavaScript hosted on Vercel with Chart.js for sensor data visualization
+-Backend: Python 3.9, Flask 2.3.3, TensorFlow 2.15, MobileNetV2, JWT authentication hosted on Render
+-Database: Supabase PostgreSQL with Row Level Security for user profiles, predictions, and sensor readings
+-Hardware: Raspberry Pi 4 with pH sensor (Analog pH Meter V2) and temperature sensor (DS18B20)
 
 ## 📡 API Endpoints
-POST /predict - Upload fish image for disease diagnosis (returns disease name and confidence score)
-POST /api/auth/register - Create new user account (returns JWT token)
-POST /api/auth/login - Authenticate user (returns JWT token)
-GET /api/predictions - Get user's prediction history with pagination
-DELETE /api/predictions/{id} - Delete specific prediction from history
-POST /api/sensors/reading - Add pH/temperature reading from Raspberry Pi
-GET /api/sensors/history/{tank_id} - Get sensor data for charts
-GET /api/sensors/latest/{tank_id} - Get most recent sensor reading
-POST /api/tanks - Register new fish tank for monitoring
-GET /api/tanks - Get all tanks for authenticated user
+-POST /predict - Upload fish image for disease diagnosis (returns disease name and confidence score)
+-POST /api/auth/register - Create new user account (returns JWT token)
+-POST /api/auth/login - Authenticate user (returns JWT token)
+-GET /api/predictions - Get user's prediction history with pagination
+-DELETE /api/predictions/{id} - Delete specific prediction from history
+-POST /api/sensors/reading - Add pH/temperature reading from Raspberry Pi
+-GET /api/sensors/history/{tank_id} - Get sensor data for charts
+-GET /api/sensors/latest/{tank_id} - Get most recent sensor reading
+-POST /api/tanks - Register new fish tank for monitoring
+-GET /api/tanks - Get all tanks for authenticated user
 
 
 ## 📁 Project Structure
@@ -126,7 +126,7 @@ healthyfins/
 ├── 📁 training/
 
 ## 👨‍💻 Contact
-GitHub: github.com/yourusername
-LinkedIn: linkedin.com/in/yourprofile
+-GitHub: github.com/yourusername
+-LinkedIn: linkedin.com/in/yourprofile
 
 
