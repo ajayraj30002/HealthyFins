@@ -125,7 +125,7 @@ healthyfins/
 
 
 ## 👨‍💻 Contact
-- GitHub: github.com/ajayraj30002
+- GitHub: https://github.com/ajayraj30002
 - LinkedIn: https://www.linkedin.com/in/ajay-raj-1ba689246
 
 
