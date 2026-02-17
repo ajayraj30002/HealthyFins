@@ -102,15 +102,31 @@ GET /api/tanks - Get all tanks for authenticated user
 
 ## 📁 Project Structure
 healthyfins/
-├── frontend/ - HTML, CSS, JavaScript files for the web interface
-├── backend/ - Flask application with MobileNetV2 model and API endpoints
-├── hardware/ - Raspberry Pi Python scripts for sensor data collection
-└── database/ - Supabase SQL schema and migration files
+│ 
+├── 📁 frontend/                            # Frontend files (Vercel)
+│   ├── index.html                          # Main page with upload form
+│   ├── dashboard.html                      # User dashboard after login
+│   ├── history.html                        # Prediction history page
+│   ├── sensors.html                        # pH monitoring graphs page
+│   ├── profile.html                        # User profile settings
+│   ├── style.css                           # All CSS styles
+│   ├── app.js                              # Main JavaScript logic
+│   ├── auth.js                             # Login/signup functions
+│
+├── 📁 backend/                             # Backend files (Render)
+│   ├── app.py                              # Main Flask application
+│   ├── auth.py                             # JWT authentication functions
+│   ├── database.py                         # Database
+│   ├── requirements.txt                    # Python dependencies
+│
+├── 📁 model/                                # Trained model files
+│   ├── fish_disease_model_final.h5          # Trained MobileNetV2 model
+│   ├── model_info.json                      # Model metadata (classes, accuracy)
+│
+├── 📁 training/
 
 ## 👨‍💻 Contact
-Your Name - email@example.com
 GitHub: github.com/yourusername
 LinkedIn: linkedin.com/in/yourprofile
 
-## 📄 License
-MIT License - Copyright (c) 2024 Your Name
+
