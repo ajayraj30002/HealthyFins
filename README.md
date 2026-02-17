@@ -41,7 +41,7 @@
 
 Designed for fish farmers, aquarium hobbyists, and aquaculture researchers, it provides:
 - 🔬 **Visual disease diagnosis** from photos (90%+ accuracy)
-- 📊 **Water quality monitoring** (pH, temperature, ammonia)
+- 📊 **Water quality monitoring** (pH)
 - 📱 **Historical data tracking** for all your tanks
 - 🔔 **Alert system** for critical conditions
 - 📈 **Trend analysis** and predictive insights
@@ -52,7 +52,7 @@ Designed for fish farmers, aquarium hobbyists, and aquaculture researchers, it p
 
 ### 🖼️ **AI Disease Detection**
 - Upload fish photos for instant diagnosis
-- 5 disease classes: Healthy, White Spot, Fin Rot, Fungus, Bacterial
+- 7 disease classes: Healthy, White tail or rot, EUS, Fungus, Bacterial, gill disease,parasitic
 - Confidence scores for each prediction
 - Dual preprocessing methods for better accuracy
 
@@ -63,17 +63,13 @@ Designed for fish farmers, aquarium hobbyists, and aquaculture researchers, it p
 - Track multiple tanks/fish populations
 
 ### 📊 **pH Monitoring & Water Quality**
-- Real-time pH sensor integration
-- Temperature monitoring
-- Ammonia/Nitrate tracking
+- Real-time pH sensor monitoring
 - Historical graphs and trends
-- Alert thresholds (email/push notifications)
+- Alert thresholds 
 
 ### 🔧 **Hardware Integration**
-- Raspberry Pi 4 base station
+- ESP system integration
 - pH sensor (Analog pH Meter V2)
-- Temperature sensor (DS18B20)
-- Optional: TDS sensor, Dissolved Oxygen sensor
 - Automated data collection every 15 minutes
 
 ### 🗄️ **Supabase Database**
