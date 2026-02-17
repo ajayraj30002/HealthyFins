@@ -15,22 +15,6 @@
 
 ---
 
-## 📋 Table of Contents
-- [Overview](#-overview)
-- [Key Features](#-key-features)
-- [Tech Stack](#-tech-stack)
-- [User History](#-user-history--authentication)
-- [pH Monitoring](#-ph-monitoring--hardware-integration)
-- [Hardware Integration](#-hardware-integration-raspberry-pi--sensors)
-- [Supabase Database](#-supabase-database-schema)
-- [MobileNetV2 Architecture](#-mobilenetv2-architecture)
-- [API Documentation](#-api-documentation)
-- [System Architecture](#-system-architecture)
-- [Deployment](#-deployment)
-- [Contact](#-contact)
-
----
-
 ## 🎯 Overview
 
 **HealthyFins** is a comprehensive fish health management platform that combines **AI-powered disease detection**, **real-time water quality monitoring**, and **user history tracking** in one integrated system. 
