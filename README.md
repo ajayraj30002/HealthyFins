@@ -79,8 +79,6 @@ Designed for fish farmers, aquarium hobbyists, and aquaculture researchers, it p
 - Tank/fish population management
 - Real-time sync across devices
 
----
-
 ## 💻 Tech Stack
 -Frontend: HTML5, CSS3, Vanilla JavaScript hosted on Vercel with Chart.js for sensor data visualization
 -Backend: Python 3.9, Flask 2.3.3, TensorFlow 2.15, MobileNetV2, JWT authentication hosted on Render
