@@ -124,9 +124,6 @@ Designed for fish farmers, aquarium hobbyists, and aquaculture researchers, it p
 - Backend: Hosted on Render using Dockerized Flask API
 - Database: Supabase PostgreSQL with Row Level Security enabled
 - Model Storage: MobileNetV2 model loaded at runtime from backend server
-- CI/CD: Automatic deployment triggered on GitHub push
-- Deployment Flow
-- Push code to GitHub
 - Vercel auto-builds frontend
 - Render rebuilds backend container
 - Backend connects to Supabase via environment variables
@@ -135,10 +132,9 @@ Designed for fish farmers, aquarium hobbyists, and aquaculture researchers, it p
 
 ## 📁 Project Structure
 healthyfins/
-│
-├── 📁 frontend/                             # Frontend files (Vercel)
-│   ├── index.html                           # Main page with upload form
-│   ├── dashboard.html                       # User dashboard after login
+-├── 📁 frontend/                             # Frontend files (Vercel)
+-│   ├── index.html                           # Main page with upload form
+-│   ├── dashboard.html                       # User dashboard after login
 │   ├── history.html                         # Prediction history page
 │   ├── sensors.html                         # pH monitoring graphs page
 │   ├── profile.html                         # User profile settings
