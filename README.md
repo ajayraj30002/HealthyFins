@@ -132,35 +132,16 @@ Designed for fish farmers, aquarium hobbyists, and aquaculture researchers, it p
 
 ## 📁 Project Structure
 healthyfins/
--├── 📁 frontend/                             # Frontend files (Vercel)
--│   ├── index.html                           # Main page with upload form
--│   ├── dashboard.html                       # User dashboard after login
-│   ├── history.html                         # Prediction history page
-│   ├── sensors.html                         # pH monitoring graphs page
-│   ├── profile.html                         # User profile settings
-│   ├── style.css                            # All CSS styles
-│   ├── app.js                               # Main JavaScript logic
-│   └── auth.js                              # Login/signup functions
-│
-├── 📁 backend/                              # Backend files (Render)
-│   ├── app.py                               # Main Flask application
-│   ├── auth.py                              # JWT authentication functions
-│   ├── database.py                          # Supabase connection & queries                        
-│   ├── requirements.txt                     # Python dependencies
-│
-├── 📁 model/                                # Trained model files
-│   ├── fish_disease_model_final.h5          # Trained MobileNetV2 model
-│   ├── model_info.json                      # Model metadata (classes, accuracy)
-│
-├── 📁 training/                             # Training scripts & notebooks
-│   ├── train_model.py                       # Training pipeline
-│   ├── preprocessing.py                     # Image preprocessing logic
-├── README.md                                # Project documentation
+- 📁 frontend/                             
+- 📁 backend/                              
+- 📁 model/                                
+- 📁 training/                             
+- README.md                                
 
 
 
 ## 👨‍💻 Contact
-- GitHub: github.com/yourusername
-- LinkedIn: linkedin.com/in/yourprofile
+- GitHub: github.com/ajayraj30002
+- LinkedIn: https://www.linkedin.com/in/ajay-raj-1ba689246
 
 
