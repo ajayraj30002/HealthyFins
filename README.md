@@ -80,8 +80,8 @@ Designed for fish farmers, aquarium hobbyists, and aquaculture researchers, it p
 - Real-time sync across devices
 
 ## 💻 Tech Stack
--Frontend: HTML5, CSS3, Vanilla JavaScript hosted on Vercel with Chart.js for sensor data visualization
--Backend: Python 3.9, Flask 2.3.3, TensorFlow 2.15, MobileNetV2, JWT authentication hosted on Render
+- Frontend: HTML5, CSS3, Vanilla JavaScript hosted on Vercel with Chart.js for sensor data visualization
+- Backend: Python 3.9, Flask 2.3.3, TensorFlow 2.15, MobileNetV2, JWT authentication hosted on Render
 -Database: Supabase PostgreSQL with Row Level Security for user profiles, predictions, and sensor readings
 -Hardware: Raspberry Pi 4 with pH sensor (Analog pH Meter V2) and temperature sensor (DS18B20)
 
