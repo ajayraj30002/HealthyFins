@@ -26,11 +26,7 @@
 - [MobileNetV2 Architecture](#-mobilenetv2-architecture)
 - [API Documentation](#-api-documentation)
 - [System Architecture](#-system-architecture)
-- [Installation](#-installation)
 - [Deployment](#-deployment)
-- [Testing](#-testing)
-- [Future Roadmap](#-future-roadmap)
-- [Contributing](#-contributing)
 - [Contact](#-contact)
 
 ---
@@ -110,6 +106,31 @@ Designed for fish farmers, aquarium hobbyists, and aquaculture researchers, it p
 - GET /api/sensors/latest/{tank_id} - Get most recent sensor reading
 - POST /api/tanks - Register new fish tank for monitoring
 - GET /api/tanks - Get all tanks for authenticated user
+
+🏗️**System Architecture**
+ HealthyFins follows a modular full-stack architecture combining AI inference, cloud backend, real-time database, and IoT hardware integration.
+
+- 🔄 High-Level Workflow
+- User uploads fish image through frontend.
+- Image is sent to Flask backend API.
+- Backend preprocesses image and runs MobileNetV2 inference.
+- Prediction happens through loaded model.
+- Dashboard displays diagnosis history and analytics.
+- Hardware collect water data periodically.
+- Frontend fetches live and historical data for visualization. 
+
+🚀 Deployment
+- Frontend: Deployed on Vercel for fast static hosting and global CDN delivery
+- Backend: Hosted on Render using Dockerized Flask API
+- Database: Supabase PostgreSQL with Row Level Security enabled
+- Model Storage: MobileNetV2 model loaded at runtime from backend server
+- CI/CD: Automatic deployment triggered on GitHub push
+- Deployment Flow
+- Push code to GitHub
+- Vercel auto-builds frontend
+- Render rebuilds backend container
+- Backend connects to Supabase via environment variables
+- Live system updates automatically  
 
 
 ## 📁 Project Structure
