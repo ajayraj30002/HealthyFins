@@ -9,21 +9,14 @@ import uuid
 class SupabaseDatabase:
     def __init__(self):
         # Get credentials from environment variables
-        self.supabase_url = os.getenv("https://bxfljshwfpgsnfyqemcd.supabase.co")
-        self.supabase_key = os.getenv("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4Zmxqc2h3ZnBnc25meXFlbWNkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0NjYxMDUsImV4cCI6MjA4NDA0MjEwNX0.M8qOkC-ajPfWgxG-PjCfY6UGLSSm5O2jmlQNTfaM3IQ")
+        self.supabase_url = os.getenv("SUPABASE_URL")
+        self.supabase_key = os.getenv("SUPABASE_KEY")
         
         # Debug
         print(f"🔍 SUPABASE_URL: {self.supabase_url}")
         print(f"🔍 SUPABASE_KEY: {self.supabase_key[:20] if self.supabase_key else 'None'}...")
         
-        # Hardcode fallback if env vars not found
-        if not self.supabase_url or self.supabase_url == "None":
-            self.supabase_url = "https://bxfljshwfpgsnfyqemcd.supabase.co"
-            print("⚠️ Using hardcoded URL")
         
-        if not self.supabase_key or self.supabase_key == "None":
-            self.supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4Zmxqc2h3ZnBnc25meXFlbWNkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0NjYxMDUsImV4cCI6MjA4NDA0MjEwNX0.M8qOkC-ajPfWgxG-PjCfY6UGLSSm5O2jmlQNTfaM3IQ"
-            print("⚠️ Using hardcoded KEY")
         
         # Headers for REST API
         self.headers = {
@@ -462,3 +455,4 @@ db = SupabaseDatabase()
 print(f"📊 Database Type: Supabase REST API")
 print(f"🔧 Valid Hardware IDs: {len(db.VALID_HARDWARE_IDS) if db else 0}")
 print("=" * 50)
+
