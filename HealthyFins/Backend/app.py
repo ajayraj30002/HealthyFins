@@ -1,4 +1,4 @@
-# app.py - COMPLETE FIXED VERSION
+# app.py - COMPLETE FIXED VERSION WITH REAL PH MONITORING
 import os
 import sys
 
@@ -69,6 +69,18 @@ class HistoryFilter(BaseModel):
 class UserUpdate(BaseModel):
     name: Optional[str] = None
     hardware_id: Optional[str] = None
+
+# ========== NEW PH MONITORING MODELS ==========
+class SensorData(BaseModel):
+    ph: float
+    temperature: Optional[float] = None
+    turbidity: Optional[float] = None
+    hardware_id: str
+    timestamp: Optional[str] = None
+
+# ========== IN-MEMORY STORAGE FOR SENSOR DATA ==========
+# In production, replace with database storage
+latest_sensor_readings = {}
 
 # ========== MODEL LOADING ==========
 model = None
@@ -674,6 +686,185 @@ async def update_profile(
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Error updating profile: {str(e)}")
 
+# ========== PH MONITORING ENDPOINTS (NEW) ==========
+@app.post("/ph-monitoring/data")
+async def receive_sensor_data(data: SensorData):
+    """
+    Receive real-time sensor data from ESP8266
+    This endpoint is public (no auth required for sensor data)
+    """
+    try:
+        # Add timestamp if not provided
+        if not data.timestamp:
+            data.timestamp = datetime.now().isoformat()
+        
+        # Store latest reading in memory
+        latest_sensor_readings[data.hardware_id] = {
+            "ph": data.ph,
+            "temperature": data.temperature,
+            "turbidity": data.turbidity,
+            "timestamp": data.timestamp,
+            "hardware_id": data.hardware_id
+        }
+        
+        # Optional: If you want to store in database, add this:
+        # if db and hasattr(db, 'store_sensor_reading'):
+        #     db.store_sensor_reading(
+        #         hardware_id=data.hardware_id,
+        #         ph=data.ph,
+        #         temperature=data.temperature,
+        #         turbidity=data.turbidity
+        #     )
+        
+        print(f"📊 Sensor data received from {data.hardware_id}: pH={data.ph}, temp={data.temperature}")
+        
+        return {
+            "success": True,
+            "message": "Sensor data received",
+            "timestamp": data.timestamp
+        }
+        
+    except Exception as e:
+        print(f"❌ Error receiving sensor data: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/ph-monitoring/latest")
+async def get_latest_sensor_data(
+    hardware_id: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Get latest sensor readings for user's hardware
+    Protected endpoint - requires authentication
+    """
+    try:
+        # If hardware_id not provided, get from user profile
+        if not hardware_id:
+            if not db:
+                # Return mock data if no database
+                return {
+                    "success": True,
+                    "data": {
+                        "ph": 7.2,
+                        "temperature": 25.5,
+                        "turbidity": 12,
+                        "timestamp": datetime.now().isoformat(),
+                        "status": "mock",
+                        "hardware_id": "unknown"
+                    }
+                }
+            
+            # Get user's hardware ID from profile
+            user_profile = db.get_user_profile(current_user["user_id"])
+            if not user_profile:
+                raise HTTPException(status_code=404, detail="User profile not found")
+            
+            hardware_id = user_profile.get("hardware_id")
+        
+        # If user has no hardware configured
+        if not hardware_id:
+            return {
+                "success": True,
+                "data": {
+                    "ph": 7.2,
+                    "temperature": 25.5,
+                    "turbidity": 12,
+                    "timestamp": datetime.now().isoformat(),
+                    "status": "mock",
+                    "hardware_id": "none",
+                    "message": "No hardware configured. Add hardware ID in profile."
+                }
+            }
+        
+        # Get latest reading for this hardware
+        reading = latest_sensor_readings.get(hardware_id)
+        
+        if reading:
+            # Real data received from sensor
+            return {
+                "success": True,
+                "data": {
+                    **reading,
+                    "status": "real"
+                }
+            }
+        else:
+            # No data received yet from this hardware
+            # Return mock data with waiting status
+            return {
+                "success": True,
+                "data": {
+                    "ph": 7.0,
+                    "temperature": 26.0,
+                    "turbidity": 10,
+                    "timestamp": None,
+                    "status": "waiting",
+                    "hardware_id": hardware_id,
+                    "message": f"Waiting for data from device {hardware_id}"
+                }
+            }
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error getting sensor data: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/ph-monitoring/history")
+async def get_sensor_history(
+    hours: int = Query(24, ge=1, le=168),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Get historical sensor readings
+    Requires database storage implementation
+    """
+    try:
+        # Get user's hardware ID
+        if not db:
+            return {
+                "success": True,
+                "data": [],
+                "message": "Database not connected - history unavailable"
+            }
+        
+        user_profile = db.get_user_profile(current_user["user_id"])
+        if not user_profile:
+            raise HTTPException(status_code=404, detail="User profile not found")
+        
+        hardware_id = user_profile.get("hardware_id")
+        
+        if not hardware_id:
+            return {
+                "success": True,
+                "data": [],
+                "message": "No hardware configured"
+            }
+        
+        # TODO: Implement database query for historical readings
+        # For now, return current reading if available
+        reading = latest_sensor_readings.get(hardware_id)
+        
+        if reading:
+            return {
+                "success": True,
+                "data": [reading],  # Just return latest as array
+                "message": "Historical data storage coming soon"
+            }
+        else:
+            return {
+                "success": True,
+                "data": [],
+                "message": "No data available"
+            }
+            
+    except Exception as e:
+        print(f"❌ Error getting sensor history: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
 # ========== HISTORY ENDPOINTS ==========
 @app.get("/history")
 async def get_history(
@@ -952,6 +1143,7 @@ print(f"📡 Backend URL: https://healthyfins.onrender.com")
 print(f"🌐 Frontend URL: https://healthy-fins.vercel.app")
 print(f"💾 Database: Supabase REST API")
 print(f"🔧 Hardware IDs: {len(db.get_hardware_ids()) if db else 0} available")
+print(f"📊 PH Monitoring: Real-time data enabled")
 print("=" * 60)
 
 if __name__ == "__main__":
