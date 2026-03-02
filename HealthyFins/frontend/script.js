@@ -1,8 +1,9 @@
-// script.js - COMPLETE FIXED VERSIOn
+// script.js - COMPLETE FIXED VERSION WITH REAL PH MONITORING
 
 // Global variables
 let currentFile = null;
 let currentResult = null;
+let phRefreshInterval = null;  // For auto-refreshing PH data
 
 // Initialize dashboard
 document.addEventListener('DOMContentLoaded', function() {
@@ -24,8 +25,38 @@ document.addEventListener('DOMContentLoaded', function() {
     setupFileUpload();
     setupEventListeners();
     
+    // Start PH data auto-refresh
+    startPHRefresh();
+    
     // Test backend connection
     testBackendConnection();
+});
+
+// Start auto-refreshing PH data every 30 seconds
+function startPHRefresh() {
+    if (phRefreshInterval) {
+        clearInterval(phRefreshInterval);
+    }
+    
+    phRefreshInterval = setInterval(() => {
+        if (checkAuth()) {
+            console.log('🔄 Auto-refreshing PH data...');
+            loadPHData(true);
+        }
+    }, 30000); // Refresh every 30 seconds
+}
+
+// Stop PH refresh (call when leaving page)
+function stopPHRefresh() {
+    if (phRefreshInterval) {
+        clearInterval(phRefreshInterval);
+        phRefreshInterval = null;
+    }
+}
+
+// Clean up on page unload
+window.addEventListener('beforeunload', function() {
+    stopPHRefresh();
 });
 
 // Test backend connection
@@ -794,32 +825,63 @@ function displayRecentHistory(history) {
     container.innerHTML = html;
 }
 
-// Load PH monitoring data
+// ========== UPDATED PH MONITORING FUNCTIONS ==========
+
+// Load PH monitoring data from real backend
 async function loadPHData(forceRefresh = false) {
     try {
-        console.log('🌡️ Loading PH data...');
+        console.log('🌡️ Loading PH data from backend...');
         
         const token = localStorage.getItem('healthyfins_token') || localStorage.getItem('token');
         if (!token) {
+            console.log('❌ No token for PH data');
             displayMockPHData();
             return;
         }
         
-        const response = await fetch(`${BACKEND_URL}/ph-monitoring`, {
+        // Use the correct endpoint from your backend
+        const response = await fetch(`${BACKEND_URL}/ph-monitoring/latest`, {
+            method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Accept': 'application/json'
-            }
+            },
+            cache: forceRefresh ? 'no-cache' : 'default'
         });
         
         if (response.ok) {
-            const data = await response.json();
-            if (data.success) {
-                displayPHData(data.data);
-                console.log('✅ PH data loaded');
+            const result = await response.json();
+            console.log('📊 PH data received:', result);
+            
+            if (result.success) {
+                displayPHData(result.data);
+                
+                // Update status badge based on data source
+                const phStatus = document.getElementById('phStatus');
+                if (phStatus) {
+                    if (result.data.status === 'real') {
+                        phStatus.textContent = '🔴 LIVE DATA';
+                        phStatus.className = 'status-badge status-connected';
+                        console.log('✅ Displaying real sensor data');
+                    } else if (result.data.status === 'waiting') {
+                        phStatus.textContent = '⏳ WAITING FOR DEVICE';
+                        phStatus.className = 'status-badge status-waiting';
+                        console.log('⏳ Waiting for sensor data from:', result.data.hardware_id);
+                        
+                        // Show waiting message
+                        showNotification(`Waiting for device ${result.data.hardware_id} to send data...`, 'info');
+                    } else {
+                        phStatus.textContent = '🎮 DEMO MODE';
+                        phStatus.className = 'status-badge status-disconnected';
+                        console.log('🎮 Using demo/mock data');
+                    }
+                }
+            } else {
+                console.log('⚠️ Could not load PH data, using mock');
+                displayMockPHData();
             }
         } else {
-            console.log('⚠️ Could not load PH data, using mock');
+            console.log('⚠️ PH endpoint returned:', response.status);
             displayMockPHData();
         }
     } catch (error) {
@@ -833,34 +895,81 @@ function displayPHData(data) {
     const tempValue = document.getElementById('tempValue');
     const turbidityValue = document.getElementById('turbidityValue');
     const phStatus = document.getElementById('phStatus');
+    const phGaugeFill = document.getElementById('phGaugeFill');
     
-    if (phReading) phReading.textContent = data.ph ? data.ph.toFixed(2) : '--.--';
-    if (tempValue) tempValue.textContent = data.temperature ? `${data.temperature}°C` : '-- °C';
-    if (turbidityValue) turbidityValue.textContent = data.turbidity ? `${data.turbidity} NTU` : '-- NTU';
-    
-    if (phStatus) {
-        phStatus.textContent = 'Connected';
-        phStatus.className = 'status-badge status-connected';
+    // Update PH value
+    if (phReading) {
+        if (data.ph && data.ph > 0) {
+            phReading.textContent = data.ph.toFixed(2);
+            phReading.style.color = getPHColor(data.ph);
+        } else {
+            phReading.textContent = '--.--';
+        }
     }
     
-    // Update gauge
-    const phValue = parseFloat(data.ph || 7.0);
-    let gaugePercent = (phValue / 14) * 100;
-    gaugePercent = Math.min(Math.max(gaugePercent, 0), 100);
+    // Update temperature
+    if (tempValue) {
+        if (data.temperature && data.temperature > 0) {
+            tempValue.textContent = `${data.temperature.toFixed(1)}°C`;
+        } else {
+            tempValue.textContent = '-- °C';
+        }
+    }
     
-    const phGaugeFill = document.getElementById('phGaugeFill');
-    if (phGaugeFill) {
+    // Update turbidity
+    if (turbidityValue) {
+        if (data.turbidity && data.turbidity > 0) {
+            turbidityValue.textContent = `${data.turbidity} NTU`;
+        } else {
+            turbidityValue.textContent = '-- NTU';
+        }
+    }
+    
+    // Update gauge if PH value exists
+    if (phGaugeFill && data.ph && data.ph > 0) {
+        let gaugePercent = (data.ph / 14) * 100;
+        gaugePercent = Math.min(Math.max(gaugePercent, 0), 100);
         phGaugeFill.style.width = `${gaugePercent}%`;
         
         // Color based on PH value
-        let gaugeColor = '#27ae60'; // Green for optimal
-        if (phValue < 6.5 || phValue > 8.5) {
+        let gaugeColor = '#27ae60'; // Green for optimal (6.5-8.0)
+        if (data.ph < 6.5 || data.ph > 8.5) {
             gaugeColor = '#e74c3c'; // Red for dangerous
-        } else if (phValue < 7.0 || phValue > 8.0) {
+        } else if (data.ph < 7.0 || data.ph > 8.0) {
             gaugeColor = '#f39c12'; // Orange for warning
         }
         phGaugeFill.style.background = gaugeColor;
     }
+    
+    // Show timestamp if available
+    if (data.timestamp) {
+        const lastUpdate = new Date(data.timestamp).toLocaleTimeString();
+        const timestampEl = document.getElementById('phTimestamp') || createTimestampElement();
+        timestampEl.textContent = `Last update: ${lastUpdate}`;
+    }
+}
+
+// Helper function to get color based on PH value
+function getPHColor(ph) {
+    if (ph >= 6.5 && ph <= 8.0) return '#27ae60'; // Good - green
+    if (ph >= 6.0 && ph <= 8.5) return '#f39c12'; // Warning - orange
+    return '#e74c3c'; // Danger - red
+}
+
+// Create timestamp element if it doesn't exist
+function createTimestampElement() {
+    const phDisplay = document.querySelector('.ph-display');
+    if (phDisplay) {
+        const timestampEl = document.createElement('small');
+        timestampEl.id = 'phTimestamp';
+        timestampEl.style.display = 'block';
+        timestampEl.style.marginTop = '10px';
+        timestampEl.style.color = '#7f8c8d';
+        timestampEl.style.fontSize = '0.8em';
+        phDisplay.appendChild(timestampEl);
+        return timestampEl;
+    }
+    return null;
 }
 
 function displayMockPHData() {
@@ -871,30 +980,35 @@ function displayMockPHData() {
         ph: (Math.random() * 3) + 6.5, // 6.5-9.5
         temperature: (Math.random() * 5) + 24, // 24-29°C
         turbidity: Math.floor(Math.random() * 50), // 0-50 NTU
-        status: 'Mock Data'
+        timestamp: new Date().toISOString(),
+        status: 'mock'
     };
     
     displayPHData(mockData);
     
     const phStatus = document.getElementById('phStatus');
     if (phStatus) {
-        phStatus.textContent = 'Mock Data';
+        phStatus.textContent = 'DEMO MODE';
         phStatus.className = 'status-badge status-disconnected';
     }
 }
 
 // Refresh PH data
 function refreshPHData() {
-    console.log('🔄 Refreshing PH data...');
+    console.log('🔄 Manually refreshing PH data...');
     loadPHData(true);
     showNotification('Refreshing PH data...', 'info');
 }
 
-// Connect hardware
+// Connect hardware - redirect to profile page
 function connectHardware() {
     console.log('🔌 Redirecting to hardware setup');
     showNotification('Redirecting to hardware setup...', 'info');
-    window.location.href = 'profile.html#hardware';
+    
+    // Small delay for notification to be seen
+    setTimeout(() => {
+        window.location.href = 'profile.html#hardware';
+    }, 500);
 }
 
 // Setup event listeners
@@ -932,6 +1046,13 @@ function setupEventListeners() {
         // Escape to clear
         if (e.key === 'Escape') {
             clearImage();
+        }
+        // Ctrl/Cmd + R for refresh PH (but don't override browser refresh)
+        if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+            if (e.shiftKey) { // Shift+Ctrl+R for manual PH refresh
+                e.preventDefault();
+                refreshPHData();
+            }
         }
     });
 }
@@ -979,7 +1100,7 @@ function showNotification(message, type = 'info') {
     }, duration);
 }
 
-// Add CSS for notifications
+// Add CSS for notifications and PH monitoring
 function addNotificationStyles() {
     if (!document.getElementById('notification-styles')) {
         const style = document.createElement('style');
@@ -1055,6 +1176,20 @@ function addNotificationStyles() {
             .history-item {
                 animation: fadeIn 0.3s ease;
             }
+            
+            /* PH Monitoring specific styles */
+            .status-badge.status-waiting {
+                background: #f39c12;
+                color: white;
+            }
+            
+            .ph-value h1 {
+                transition: color 0.3s ease;
+            }
+            
+            #phTimestamp {
+                animation: fadeIn 0.3s ease;
+            }
         `;
         document.head.appendChild(style);
     }
@@ -1069,10 +1204,12 @@ window.clearImage = clearImage;
 window.newAnalysis = newAnalysis;
 window.refreshPHData = refreshPHData;
 window.connectHardware = connectHardware;
+window.loadPHData = loadPHData;
 
 // Make sure auth.js functions are available
 function checkAuth() {
-    return window.HealthyFins ? window.HealthyFins.checkAuth() : false;
+    return window.HealthyFins ? window.HealthyFins.checkAuth() : 
+           (localStorage.getItem('healthyfins_token') || localStorage.getItem('token')) ? true : false;
 }
 
 function logout() {
@@ -1092,5 +1229,3 @@ if (typeof HealthyFins === 'undefined') {
         loadDashboardData();
     });
 }
-
-
