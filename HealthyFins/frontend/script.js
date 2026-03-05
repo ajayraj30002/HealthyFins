@@ -6,7 +6,7 @@ let currentResult = null;
 let phRefreshInterval = null;  // For auto-refreshing PH data
 
 // Backend URL
-const BACKEND_URL = "http://localhost:8000"; // Change to your Render URL
+const BACKEND_URL = "https://healthyfins.onrender.com/"; // Change to your Render URL
 
 // Initialize dashboard
 document.addEventListener('DOMContentLoaded', function() {
