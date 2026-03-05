@@ -1,4 +1,4 @@
-# database.py - COMPLETE FIXED VERSION
+# database.py - COMPLETE FIXED VERSION WITH HARDWARE ID VALIDATION
 import os
 import requests
 import hashlib
@@ -16,8 +16,6 @@ class SupabaseDatabase:
         print(f"🔍 SUPABASE_URL: {self.supabase_url}")
         print(f"🔍 SUPABASE_KEY: {self.supabase_key[:20] if self.supabase_key else 'None'}...")
         
-        
-        
         # Headers for REST API
         self.headers = {
             "apikey": self.supabase_key,
@@ -30,7 +28,9 @@ class SupabaseDatabase:
             "FISHMON-001", "FISHMON-002", "FISHMON-003",
             "FISHMON-004", "FISHMON-005", "FISHMON-006",
             "AQUATECH-101", "AQUATECH-102", "AQUATECH-103",
-            "HYDROPRO-201", "HYDROPRO-202"
+            "HYDROPRO-201", "HYDROPRO-202",
+            "fishmon-001", "fishmon-002", "fishmon-003",  # Added lowercase versions
+            "test123"  # For testing
         ]
         
         # Test connection
@@ -51,8 +51,37 @@ class SupabaseDatabase:
             print(f"❌ Connection failed: {e}")
     
     def create_user(self, email: str, password: str, name: str, hardware_id: Optional[str] = None) -> tuple:
-        """Create a new user"""
+        """Create a new user with hardware ID validation"""
         try:
+            # ===== HARDWARE ID VALIDATION =====
+            if hardware_id:
+                # Check if hardware ID is empty or just whitespace
+                if not hardware_id.strip():
+                    return False, "Hardware ID cannot be empty"
+                
+                # Check if hardware ID exists in valid list (case-insensitive)
+                hardware_id_upper = hardware_id.upper()
+                valid_ids_upper = [hid.upper() for hid in self.VALID_HARDWARE_IDS]
+                
+                if hardware_id_upper not in valid_ids_upper:
+                    return False, f"❌ Invalid hardware ID: '{hardware_id}'. Please use a valid ID from your ESP8266 device."
+                
+                # Check if hardware ID is already in use
+                response = requests.get(
+                    f"{self.supabase_url}/rest/v1/users",
+                    headers=self.headers,
+                    params={"hardware_id": f"eq.{hardware_id}"}
+                )
+                
+                if response.status_code == 200:
+                    existing_users = response.json()
+                    if existing_users:
+                        return False, f"❌ Hardware ID '{hardware_id}' is already registered to another user. Each hardware ID can only be used once."
+                else:
+                    print(f"⚠️ Hardware ID check failed: {response.status_code}")
+            else:
+                return False, "Hardware ID is required. Please enter the ID from your ESP8266 device."
+            
             # Check if user exists
             response = requests.get(
                 f"{self.supabase_url}/rest/v1/users",
@@ -61,7 +90,7 @@ class SupabaseDatabase:
             )
             
             if response.status_code == 200 and response.json():
-                return False, "Email already exists"
+                return False, "❌ Email already exists"
             
             # Create user
             user_id = str(uuid.uuid4())[:12]
@@ -85,7 +114,7 @@ class SupabaseDatabase:
             )
             
             if response.status_code in [200, 201]:
-                print(f"✅ User created: {email}")
+                print(f"✅ User created: {email} with hardware_id: {hardware_id}")
                 return True, {
                     "user_id": user_id,
                     "email": email,
@@ -323,12 +352,39 @@ class SupabaseDatabase:
     
     def update_user_profile(self, user_id: str, name: Optional[str] = None,
                            hardware_id: Optional[str] = None) -> tuple:
-        """Update user profile"""
+        """Update user profile with hardware ID validation"""
         try:
             update_data = {}
             if name:
                 update_data["name"] = name
+            
+            # ===== HARDWARE ID VALIDATION FOR UPDATE =====
             if hardware_id is not None:
+                # Check if hardware ID is empty
+                if hardware_id and not hardware_id.strip():
+                    return False, "Hardware ID cannot be empty"
+                
+                if hardware_id:
+                    # Check if hardware ID exists in valid list
+                    hardware_id_upper = hardware_id.upper()
+                    valid_ids_upper = [hid.upper() for hid in self.VALID_HARDWARE_IDS]
+                    
+                    if hardware_id_upper not in valid_ids_upper:
+                        return False, f"❌ Invalid hardware ID: '{hardware_id}'. Please use a valid ID."
+                    
+                    # Check if hardware ID is already in use by ANOTHER user
+                    response = requests.get(
+                        f"{self.supabase_url}/rest/v1/users",
+                        headers=self.headers,
+                        params={"hardware_id": f"eq.{hardware_id}"}
+                    )
+                    
+                    if response.status_code == 200:
+                        existing_users = response.json()
+                        # If found and it's not the current user
+                        if existing_users and existing_users[0]["id"] != user_id:
+                            return False, f"❌ Hardware ID '{hardware_id}' is already registered to another user."
+                
                 update_data["hardware_id"] = hardware_id if hardware_id else None
             
             if not update_data:
@@ -455,4 +511,3 @@ db = SupabaseDatabase()
 print(f"📊 Database Type: Supabase REST API")
 print(f"🔧 Valid Hardware IDs: {len(db.VALID_HARDWARE_IDS) if db else 0}")
 print("=" * 50)
-
