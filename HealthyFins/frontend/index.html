@@ -255,23 +255,6 @@
             color: var(--primary-dark);
         }
         
-        .valid-hint {
-            background: #f8f9fa;
-            padding: 10px;
-            border-radius: 8px;
-            margin-top: 10px;
-            font-size: 0.85rem;
-        }
-        
-        .valid-hint span {
-            display: inline-block;
-            background: var(--primary-light);
-            padding: 3px 8px;
-            border-radius: 4px;
-            margin: 2px;
-            font-family: monospace;
-        }
-        
         /* Form Switcher */
         .form-page {
             display: none;
@@ -376,7 +359,7 @@
                     </div>
                 </div>
                 
-                <!-- Signup Form - UPDATED with Hardware ID Validation -->
+                <!-- Signup Form - FIXED: Removed visible hardware IDs -->
                 <div class="form-page" id="signupPage">
                     <h2 class="form-title">Create Account</h2>
                     <p class="form-subtitle">Join Healthy-Fins for free</p>
@@ -404,7 +387,7 @@
                             </label>
                             <input type="text" 
                                    id="hardwareId" 
-                                   placeholder="e.g., fishmon-001" 
+                                   placeholder="Enter your device ID" 
                                    required
                                    class="">
                             <div class="error-message" id="hardwareError" style="display: none;">
@@ -415,11 +398,7 @@
                                 <i class="fas fa-info-circle"></i> 
                                 Enter the hardware ID from your ESP8266 device. This links your physical device to your account.
                             </small>
-                            <div class="valid-hint">
-                                <strong>Valid Hardware IDs:</strong><br>
-                                <span>fishmon-001</span> <span>fishmon-002</span> <span>fishmon-003</span>
-                                <span>FISHMON-001</span> <span>AQUATECH-101</span> <span>test123</span>
-                            </div>
+                            <!-- REMOVED: The visible hardware ID list that was here! -->
                         </div>
                         
                         <button type="submit" class="btn btn-secondary" id="signupBtn">
@@ -434,7 +413,7 @@
                     <div class="hardware-note">
                         <i class="fas fa-info-circle"></i>
                         <strong>Hardware ID Required:</strong> You must enter the hardware ID from your ESP8266 device. 
-                        Each hardware ID can only be used once. If you don't have one yet, use <strong>test123</strong> for testing.
+                        Each hardware ID can only be used once.
                     </div>
                 </div>
             </div>
@@ -537,7 +516,7 @@
             }
         });
         
-        // Signup handler - UPDATED with hardware ID validation
+        // Signup handler - UPDATED with simpler error message
         document.getElementById('signupForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -587,11 +566,11 @@
                         window.location.href = 'dashboard.html';
                     }, 1000);
                 } else {
-                    // Show error message
+                    // Show error message - now it will show "Please enter a valid hardware ID"
                     showAlert('error', data.detail || 'Registration failed');
                     
                     // If error is about hardware ID, highlight the field
-                    if (data.detail && data.detail.includes('Hardware ID')) {
+                    if (data.detail && data.detail.includes('hardware ID')) {
                         document.getElementById('hardwareErrorText').textContent = data.detail;
                         document.getElementById('hardwareError').style.display = 'flex';
                         document.getElementById('hardwareId').classList.add('input-error');
