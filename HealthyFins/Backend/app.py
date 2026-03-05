@@ -354,6 +354,7 @@ async def get_hardware_info():
         return {"success": False, "error": str(e)}
 
 # ========== AUTH ENDPOINTS ==========
+# ========== AUTH ENDPOINTS ==========
 @app.post("/register")
 async def register_user(
     email: str = Form(...),
@@ -361,16 +362,22 @@ async def register_user(
     name: str = Form(...),
     hardware_id: Optional[str] = Form(None)
 ):
-    """Register new user"""
+    """Register new user with hardware ID validation"""
     try:
         print(f"📝 Registration attempt for: {email}")
+        print(f"🔧 Hardware ID provided: {hardware_id}")
         
         if not db:
             raise HTTPException(status_code=500, detail="Database not connected")
         
+        # Hardware ID is now required
+        if not hardware_id:
+            raise HTTPException(status_code=400, detail="Hardware ID is required. Please enter the ID from your ESP8266 device.")
+        
         success, result = db.create_user(email, password, name, hardware_id)
         
         if not success:
+            # Pass through the specific error message from database.py
             raise HTTPException(status_code=400, detail=result)
         
         access_token = create_access_token(data={
