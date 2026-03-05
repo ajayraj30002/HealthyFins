@@ -62,7 +62,7 @@
         
         .ph-stats-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(2, 1fr);  /* Changed from 4 to 2 columns */
             gap: 20px;
             margin-top: 20px;
         }
@@ -299,7 +299,7 @@
             }
             
             .ph-stats-grid {
-                grid-template-columns: repeat(2, 1fr);
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -380,26 +380,13 @@
                     </div>
                 </div>
                 
+                <!-- UPDATED: Removed temperature and turbidity, only showing pH and hardware ID -->
                 <div class="ph-stats-grid">
                     <div class="ph-stat-card">
                         <i class="fas fa-tint"></i>
                         <h3 id="currentPH">--.--</h3>
                         <p>pH Level</p>
                         <small id="phStatus" class="status-text">Normal Range: 6.5-8.0</small>
-                    </div>
-                    
-                    <div class="ph-stat-card">
-                        <i class="fas fa-thermometer-half"></i>
-                        <h3 id="currentTemp">--.-°C</h3>
-                        <p>Temperature</p>
-                        <small>Optimal: 24-28°C</small>
-                    </div>
-                    
-                    <div class="ph-stat-card">
-                        <i class="fas fa-water"></i>
-                        <h3 id="currentTurbidity">-- NTU</h3>
-                        <p>Turbidity</p>
-                        <small>Clear: {'<'}5 NTU</small>
                     </div>
                     
                     <div class="ph-stat-card">
@@ -497,7 +484,7 @@
             </div>
         </div>
 
-        <!-- History Table -->
+        <!-- History Table - UPDATED: Removed temperature and turbidity columns -->
         <div class="history-table-container">
             <div class="card-header">
                 <h3><i class="fas fa-history"></i> Recent Readings</h3>
@@ -510,14 +497,12 @@
                     <tr>
                         <th>Time</th>
                         <th>pH Value</th>
-                        <th>Temperature</th>
-                        <th>Turbidity</th>
                         <th>Status</th>
                     </tr>
                 </thead>
                 <tbody id="historyTableBody">
                     <tr>
-                        <td colspan="5" class="text-center">Loading historical data...</td>
+                        <td colspan="3" class="text-center">Loading historical data...</td>
                     </tr>
                 </tbody>
             </table>
@@ -653,8 +638,6 @@
             // Update current readings
             document.getElementById('currentPH').textContent = data.ph ? data.ph.toFixed(2) : '--.--';
             document.getElementById('gaugePH').textContent = data.ph ? data.ph.toFixed(2) : '--.--';
-            document.getElementById('currentTemp').textContent = data.temperature ? data.temperature.toFixed(1) + '°C' : '--.-°C';
-            document.getElementById('currentTurbidity').textContent = data.turbidity ? data.turbidity + ' NTU' : '-- NTU';
             document.getElementById('hardwareID').textContent = data.hardware_id || 'Not set';
             
             // Update gauge
@@ -755,8 +738,6 @@
             const mockPH = (Math.random() * 3) + 6.0;
             const mockData = {
                 ph: mockPH,
-                temperature: (Math.random() * 5) + 24,
-                turbidity: Math.floor(Math.random() * 50),
                 timestamp: new Date().toISOString(),
                 hardware_id: 'fishmon-001',
                 status: 'mock'
@@ -764,7 +745,7 @@
             updatePHDashboard(mockData);
         }
         
-        // Generate mock history data
+        // Generate mock history data - UPDATED: Removed temperature and turbidity
         function generateMockHistory() {
             const chart = document.getElementById('phChart');
             const labels = document.getElementById('chartLabels');
@@ -794,12 +775,11 @@
                 if (mockPH < 6.5 || mockPH > 8.5) phClass = 'ph-value-danger';
                 else if (mockPH < 7.0 || mockPH > 8.0) phClass = 'ph-value-warning';
                 
+                // UPDATED: Only showing time, pH, and status (removed temp and turbidity)
                 tableHTML += `
                     <tr>
                         <td>${time.toLocaleString()}</td>
                         <td class="${phClass}">${mockPH.toFixed(2)}</td>
-                        <td>${((Math.random() * 5) + 24).toFixed(1)}°C</td>
-                        <td>${Math.floor(Math.random() * 50)} NTU</td>
                         <td><span class="badge ${mockPH >= 6.5 && mockPH <= 8.0 ? 'badge-success' : 'badge-warning'}">${mockPH >= 6.5 && mockPH <= 8.0 ? 'Normal' : 'Warning'}</span></td>
                     </tr>
                 `;
