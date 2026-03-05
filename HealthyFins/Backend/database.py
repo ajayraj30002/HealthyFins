@@ -27,10 +27,10 @@ class SupabaseDatabase:
         self.VALID_HARDWARE_IDS = [
             "FISHMON-001", "FISHMON-002", "FISHMON-003",
             "FISHMON-004", "FISHMON-005", "FISHMON-006",
-            "AQUATECH-101", "AQUATECH-102", "AQUATECH-103",
-            "HYDROPRO-201", "HYDROPRO-202",
-            "fishmon-001", "fishmon-002", "fishmon-003",  # Added lowercase versions
-            "test123"  # For testing
+            "AQUATECH-101", "AQUATECH-102", "AQUATECH-103"
+            
+            
+            
         ]
         
         # Test connection
@@ -511,3 +511,4 @@ db = SupabaseDatabase()
 print(f"📊 Database Type: Supabase REST API")
 print(f"🔧 Valid Hardware IDs: {len(db.VALID_HARDWARE_IDS) if db else 0}")
 print("=" * 50)
+
