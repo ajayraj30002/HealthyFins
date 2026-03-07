@@ -1,9 +1,9 @@
 // auth.js - HealthyFins Production Version - COMPLETE FIXED
-
+import os
 // ========== CONFIGURATION ==========
 
 // Backend URL - Your Render backend URL
-const BACKEND_URL = "https://healthyfins.onrender.com";
+const BACKEND_URL = os.getenv("BACKEND_URL");
 
 // Frontend URL - Your Vercel frontend
 const FRONTEND_URL = "https://healthy-fins.vercel.app";
