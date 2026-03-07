@@ -42,11 +42,11 @@ app = FastAPI(
 
 # ========== CORS CONFIGURATION ==========
 origins = [
-    "https://healthy-fins.vercel.app",
+    "https://healthy-fins.vercel.app",  # Your frontend (NO trailing slash!)
+    "https://healthyfins.onrender.com", # Your backend
     "http://localhost:3000",
     "http://localhost:5500",
     "http://127.0.0.1:5500",
-    "*"
 ]
 
 app.add_middleware(
