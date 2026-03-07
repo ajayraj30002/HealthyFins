@@ -1,5 +1,5 @@
 // auth.js - HealthyFins Production Version - COMPLETE FIXED
-import os
+
 // ========== CONFIGURATION ==========
 
 // Backend URL - Your Render backend URL
