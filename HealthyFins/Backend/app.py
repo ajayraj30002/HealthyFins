@@ -1,4 +1,4 @@
-# app.py - COMPLETE FIXED VERSION WITH REAL PH MONITORING
+# app.py - COMPLETE FIXED VERSION WITH MODEL LOADING COMPATIBILITY
 import os
 import sys
 
@@ -33,26 +33,20 @@ from auth import create_access_token, get_current_user
 # Get base directory for file paths
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Initialize app
+# ========== CREATE FASTAPI APP ==========
 app = FastAPI(
     title="HealthyFins API",
     description="AI Fish Disease Detection System",
     version="5.0.0"
 )
-@app.get("/script.js")
-async def get_script():
-    response = FileResponse("script.js")
-    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-    response.headers["Pragma"] = "no-cache"
-    response.headers["Expires"] = "0"
-    return response
+
 # ========== CORS CONFIGURATION ==========
 origins = [
-    "https://healthy-fins.vercel.app",  # Your frontend (NO trailing slash!)
-    "https://healthyfins.onrender.com", # Your backend
+    "https://healthy-fins.vercel.app",
     "http://localhost:3000",
     "http://localhost:5500",
     "http://127.0.0.1:5500",
+    "*"
 ]
 
 app.add_middleware(
@@ -76,7 +70,7 @@ class UserUpdate(BaseModel):
     name: Optional[str] = None
     hardware_id: Optional[str] = None
 
-# ========== NEW PH MONITORING MODELS ==========
+# ========== PH MONITORING MODELS ==========
 class SensorData(BaseModel):
     ph: float
     temperature: Optional[float] = None
@@ -84,30 +78,46 @@ class SensorData(BaseModel):
     hardware_id: str
     timestamp: Optional[str] = None
 
-# ========== IN-MEMORY STORAGE FOR SENSOR DATA ==========
-# In production, replace with database storage
+# ========== IN-MEMORY STORAGE ==========
 latest_sensor_readings = {}
 
-# ========== MODEL LOADING ==========
+# ========== MODEL LOADING - FIXED VERSION ==========
 model = None
 class_names = []
 reverse_label_map = {}
 
-def fix_model_compatibility(model_path):
-    """Fix compatibility issues between TF versions"""
+def custom_load_model(model_path):
+    """Custom model loader that handles batch_shape error"""
     try:
-        print("🔄 Attempting to fix model compatibility...")
-        custom_objects = {'InputLayer': tf.keras.layers.InputLayer}
-        model = tf.keras.models.load_model(model_path, compile=False, custom_objects=custom_objects)
+        print("🔄 Using custom model loader...")
+        
+        # Register custom InputLayer to handle batch_shape
+        class CompatibleInputLayer(tf.keras.layers.InputLayer):
+            def __init__(self, **kwargs):
+                if 'batch_shape' in kwargs:
+                    kwargs['shape'] = kwargs['batch_shape'][1:]
+                    del kwargs['batch_shape']
+                super().__init__(**kwargs)
+        
+        # Try loading with custom objects
+        model = tf.keras.models.load_model(
+            model_path, 
+            custom_objects={'InputLayer': CompatibleInputLayer},
+            compile=False
+        )
+        print("✅ Model loaded with compatibility fix!")
         return model, True
+        
     except Exception as e:
-        print(f"❌ Standard loading failed: {e}")
-        return build_model_from_weights(model_path)
+        print(f"❌ Custom loader failed: {e}")
+        return None, False
 
-def build_model_from_weights(model_path):
-    """Build model from scratch and load weights"""
+def load_model_from_weights(model_path):
+    """Rebuild model architecture and load weights"""
     try:
-        print("🏗️ Building model from scratch...")
+        print("🏗️ Rebuilding model from scratch...")
+        
+        # Build the same architecture as your trained model
         base_model = tf.keras.applications.MobileNetV2(
             input_shape=(224, 224, 3),
             include_top=False,
@@ -125,28 +135,19 @@ def build_model_from_weights(model_path):
             tf.keras.layers.Dense(8, activation='softmax')
         ])
         
-        model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
-        print("✅ Model architecture recreated")
+        model.compile(
+            optimizer='adam', 
+            loss='sparse_categorical_crossentropy', 
+            metrics=['accuracy']
+        )
         
-        try:
-            model.load_weights(model_path)
-            print("✅ Weights loaded successfully!")
-            return model, True
-        except:
-            print("⚠️ Could not load weights, using initialized model")
-            return model, False
-    except Exception as e:
-        print(f"❌ Failed to build model: {e}")
-        return None, False
-
-def simple_model_loader(model_path):
-    """Simplest model loader for compatibility"""
-    try:
-        print("🔄 Using simple model loader...")
-        model = tf.keras.models.load_model(model_path, compile=False, safe_mode=False)
+        # Try to load weights
+        model.load_weights(model_path)
+        print("✅ Weights loaded successfully!")
         return model, True
+        
     except Exception as e:
-        print(f"❌ Simple loader failed: {e}")
+        print(f"❌ Weight loading failed: {e}")
         return None, False
 
 @app.on_event("startup")
@@ -215,12 +216,11 @@ async def load_model():
     print(f"📊 Total classes: {len(class_names)}")
     print(f"📊 TensorFlow version: {tf.__version__}")
     
-    # Try multiple loading strategies
+    # Try loading strategies
     if os.path.exists(model_path):
         loading_strategies = [
-            ("Simple loader", simple_model_loader),
-            ("Compatibility fix", fix_model_compatibility),
-            ("Build from weights", build_model_from_weights)
+            ("Custom loader", custom_load_model),
+            ("Build from weights", load_model_from_weights),
         ]
         
         for strategy_name, strategy_func in loading_strategies:
@@ -264,7 +264,6 @@ async def root():
             "classes": len(class_names)
         }
         
-        # Get available hardware IDs safely
         hardware_ids = []
         try:
             if db:
@@ -324,42 +323,6 @@ async def health_check():
             "error": str(e)
         }
 
-@app.get("/hardware")
-async def get_hardware_info():
-    """Get available hardware IDs"""
-    try:
-        if not db:
-            return {"success": False, "error": "Database not connected"}
-        
-        hardware_ids = db.get_hardware_ids()
-        
-        available_ids = []
-        for hw_id in hardware_ids:
-            try:
-                available = db.check_hardware_available(hw_id)
-                available_ids.append({
-                    "id": hw_id,
-                    "available": available,
-                    "type": "PH Monitoring Device"
-                })
-            except:
-                available_ids.append({
-                    "id": hw_id,
-                    "available": True,
-                    "type": "PH Monitoring Device"
-                })
-        
-        return {
-            "success": True,
-            "hardware": available_ids,
-            "total": len(available_ids),
-            "available": sum(1 for h in available_ids if h.get("available", False))
-        }
-    except Exception as e:
-        print(f"❌ Hardware endpoint error: {e}")
-        return {"success": False, "error": str(e)}
-
-# ========== AUTH ENDPOINTS ==========
 # ========== AUTH ENDPOINTS ==========
 @app.post("/register")
 async def register_user(
@@ -368,22 +331,16 @@ async def register_user(
     name: str = Form(...),
     hardware_id: Optional[str] = Form(None)
 ):
-    """Register new user with hardware ID validation"""
+    """Register new user"""
     try:
         print(f"📝 Registration attempt for: {email}")
-        print(f"🔧 Hardware ID provided: {hardware_id}")
         
         if not db:
             raise HTTPException(status_code=500, detail="Database not connected")
         
-        # Hardware ID is now required
-        if not hardware_id:
-            raise HTTPException(status_code=400, detail="Hardware ID is required. Please enter the ID from your ESP8266 device.")
-        
         success, result = db.create_user(email, password, name, hardware_id)
         
         if not success:
-            # Pass through the specific error message from database.py
             raise HTTPException(status_code=400, detail=result)
         
         access_token = create_access_token(data={
@@ -567,7 +524,8 @@ async def predict_disease(
             try:
                 predictions = model.predict(processed_image, verbose=0)[0]
                 model_type = "ai_model"
-            except:
+            except Exception as e:
+                print(f"⚠️ Model prediction failed: {e}")
                 predictions = analyze_image_features(processed_image)
                 model_type = "enhanced_analysis"
         else:
@@ -699,19 +657,14 @@ async def update_profile(
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Error updating profile: {str(e)}")
 
-# ========== PH MONITORING ENDPOINTS (NEW) ==========
+# ========== PH MONITORING ENDPOINTS ==========
 @app.post("/ph-monitoring/data")
 async def receive_sensor_data(data: SensorData):
-    """
-    Receive real-time sensor data from ESP8266
-    This endpoint is public (no auth required for sensor data)
-    """
+    """Receive real-time sensor data from ESP8266"""
     try:
-        # Add timestamp if not provided
         if not data.timestamp:
             data.timestamp = datetime.now().isoformat()
         
-        # Store latest reading in memory
         latest_sensor_readings[data.hardware_id] = {
             "ph": data.ph,
             "temperature": data.temperature,
@@ -720,16 +673,7 @@ async def receive_sensor_data(data: SensorData):
             "hardware_id": data.hardware_id
         }
         
-        # Optional: If you want to store in database, add this:
-        # if db and hasattr(db, 'store_sensor_reading'):
-        #     db.store_sensor_reading(
-        #         hardware_id=data.hardware_id,
-        #         ph=data.ph,
-        #         temperature=data.temperature,
-        #         turbidity=data.turbidity
-        #     )
-        
-        print(f"📊 Sensor data received from {data.hardware_id}: pH={data.ph}, temp={data.temperature}")
+        print(f"📊 Sensor data received from {data.hardware_id}: pH={data.ph}")
         
         return {
             "success": True,
@@ -747,15 +691,10 @@ async def get_latest_sensor_data(
     hardware_id: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
 ):
-    """
-    Get latest sensor readings for user's hardware
-    Protected endpoint - requires authentication
-    """
+    """Get latest sensor readings for user's hardware"""
     try:
-        # If hardware_id not provided, get from user profile
         if not hardware_id:
             if not db:
-                # Return mock data if no database
                 return {
                     "success": True,
                     "data": {
@@ -768,14 +707,12 @@ async def get_latest_sensor_data(
                     }
                 }
             
-            # Get user's hardware ID from profile
             user_profile = db.get_user_profile(current_user["user_id"])
             if not user_profile:
                 raise HTTPException(status_code=404, detail="User profile not found")
             
             hardware_id = user_profile.get("hardware_id")
         
-        # If user has no hardware configured
         if not hardware_id:
             return {
                 "success": True,
@@ -790,11 +727,9 @@ async def get_latest_sensor_data(
                 }
             }
         
-        # Get latest reading for this hardware
         reading = latest_sensor_readings.get(hardware_id)
         
         if reading:
-            # Real data received from sensor
             return {
                 "success": True,
                 "data": {
@@ -803,8 +738,6 @@ async def get_latest_sensor_data(
                 }
             }
         else:
-            # No data received yet from this hardware
-            # Return mock data with waiting status
             return {
                 "success": True,
                 "data": {
@@ -822,59 +755,6 @@ async def get_latest_sensor_data(
         raise
     except Exception as e:
         print(f"❌ Error getting sensor data: {e}")
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/ph-monitoring/history")
-async def get_sensor_history(
-    hours: int = Query(24, ge=1, le=168),
-    current_user: dict = Depends(get_current_user)
-):
-    """
-    Get historical sensor readings
-    Requires database storage implementation
-    """
-    try:
-        # Get user's hardware ID
-        if not db:
-            return {
-                "success": True,
-                "data": [],
-                "message": "Database not connected - history unavailable"
-            }
-        
-        user_profile = db.get_user_profile(current_user["user_id"])
-        if not user_profile:
-            raise HTTPException(status_code=404, detail="User profile not found")
-        
-        hardware_id = user_profile.get("hardware_id")
-        
-        if not hardware_id:
-            return {
-                "success": True,
-                "data": [],
-                "message": "No hardware configured"
-            }
-        
-        # TODO: Implement database query for historical readings
-        # For now, return current reading if available
-        reading = latest_sensor_readings.get(hardware_id)
-        
-        if reading:
-            return {
-                "success": True,
-                "data": [reading],  # Just return latest as array
-                "message": "Historical data storage coming soon"
-            }
-        else:
-            return {
-                "success": True,
-                "data": [],
-                "message": "No data available"
-            }
-            
-    except Exception as e:
-        print(f"❌ Error getting sensor history: {e}")
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -1020,49 +900,6 @@ async def get_user_stats(current_user: dict = Depends(get_current_user)):
         print(f"❌ Get stats error: {e}")
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Error fetching stats: {str(e)}")
-
-@app.get("/stats/daily")
-async def get_daily_stats(
-    days: int = Query(7, ge=1, le=30),
-    current_user: dict = Depends(get_current_user)
-):
-    """Get daily statistics"""
-    try:
-        if not db:
-            raise HTTPException(status_code=500, detail="Database not connected")
-        
-        history = db.get_user_history(current_user["user_id"], limit=100)
-        
-        daily_stats = {}
-        for entry in history:
-            date = entry["timestamp"][:10]
-            if date not in daily_stats:
-                daily_stats[date] = {"count": 0, "healthy": 0, "diseases": {}}
-            
-            daily_stats[date]["count"] += 1
-            if "healthy" in entry["prediction"].lower():
-                daily_stats[date]["healthy"] += 1
-            else:
-                disease = entry["prediction"]
-                daily_stats[date]["diseases"][disease] = daily_stats[date]["diseases"].get(disease, 0) + 1
-        
-        daily_list = [
-            {"date": date, **stats}
-            for date, stats in sorted(daily_stats.items(), reverse=True)[:days]
-        ]
-        
-        return {
-            "success": True,
-            "daily_stats": daily_list,
-            "days": len(daily_list)
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"❌ Get daily stats error: {e}")
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Error fetching daily stats: {str(e)}")
 
 # ========== SEARCH ENDPOINTS ==========
 @app.get("/search")
