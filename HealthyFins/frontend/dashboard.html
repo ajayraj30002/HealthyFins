@@ -87,83 +87,56 @@
         <div class="dashboard-grid">
             <!-- Left Column -->
             <div class="left-column">
-                <!-- Disease Detection Card - FIXED VERSION -->
+                <!-- Disease Detection Card -->
                 <div class="card">
                     <div class="card-header">
                         <h2><i class="fas fa-camera"></i> Disease Detection</h2>
                         <p>Upload fish image for AI analysis</p>
                     </div>
                     
-                    <!-- UPLOAD AREA -->
-                    <div class="upload-area" id="uploadArea" style="cursor: pointer; border: 3px dashed #2c8c99; border-radius: 12px; padding: 48px; text-align: center; background: #e9f7fe; margin-bottom: 20px;">
-                        <div class="upload-icon">
-                            <i class="fas fa-cloud-upload-alt"></i>
+                    <!-- SIMPLE WORKING UPLOAD -->
+                    <div id="uploadContainer">
+                        <div style="border: 3px dashed #2c8c99; border-radius: 12px; padding: 40px; text-align: center; background: #e9f7fe; cursor: pointer;" id="clickToUpload">
+                            <i class="fas fa-cloud-upload-alt" style="font-size: 48px; color: #2c8c99;"></i>
+                            <h3>Click to Upload Image</h3>
+                            <p>JPG, PNG, BMP • Max 10MB</p>
                         </div>
-                        <h3>Drop image here or click to browse</h3>
-                        <p>Supports JPG, PNG, BMP • Max 10MB</p>
-                        <button class="btn btn-primary" id="uploadBtn">
-                            <i class="fas fa-upload"></i> Choose Image
-                        </button>
-                        <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                        <input type="file" id="imageFile" accept="image/*" style="display: none;">
                     </div>
                     
-                    <!-- PREVIEW SECTION -->
-                    <div class="preview-section" id="previewSection" style="display: none;">
+                    <!-- Preview -->
+                    <div id="previewContainer" style="display: none; margin-top: 20px;">
                         <h4>Image Preview</h4>
-                        <div class="image-preview">
-                            <img id="previewImage" src="" alt="Preview" style="max-width: 100%; max-height: 300px;">
-                        </div>
-                        <div class="preview-actions" style="margin-top: 15px;">
-                            <button class="btn btn-primary" id="analyzeBtn">
+                        <img id="previewImg" style="max-width: 100%; max-height: 300px; border-radius: 8px;">
+                        <div style="margin-top: 15px;">
+                            <button class="btn btn-primary" id="analyzeImageBtn">
                                 <i class="fas fa-search"></i> Analyze Now
                             </button>
-                            <button class="btn btn-outline" id="clearBtn">
+                            <button class="btn btn-outline" id="clearImageBtn">
                                 <i class="fas fa-times"></i> Remove
                             </button>
                         </div>
                     </div>
                     
                     <!-- Loading -->
-                    <div class="loading" id="loadingSection" style="display: none; text-align: center; padding: 48px;">
-                        <i class="fas fa-spinner fa-spin"></i>
+                    <div id="loadingContainer" style="display: none; text-align: center; padding: 40px;">
+                        <i class="fas fa-spinner fa-spin" style="font-size: 32px;"></i>
                         <p>Analyzing your fish image...</p>
                     </div>
                     
                     <!-- Results -->
-                    <div class="results-section" id="resultsSection" style="display: none;">
-                        <div class="result-header">
+                    <div id="resultsContainer" style="display: none; margin-top: 20px;">
+                        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
                             <h3><i class="fas fa-stethoscope"></i> Diagnosis Results</h3>
-                            <span class="badge" id="diseaseBadge">Healthy</span>
-                        </div>
-                        
-                        <div class="result-content">
-                            <div class="disease-info">
-                                <h2 id="resultDisease">Healthy Fish</h2>
-                                <div class="confidence-meter">
-                                    <div class="confidence-text">
-                                        Confidence: <strong id="confidenceValue">95%</strong>
-                                    </div>
-                                    <div class="meter-bar">
-                                        <div class="meter-fill" id="confidenceFill" style="width: 95%; height: 20px; background: linear-gradient(90deg, #27ae60, #f39c12); border-radius: 10px;"></div>
-                                    </div>
+                            <h2 id="diagnosisResult">-</h2>
+                            <div style="margin: 15px 0;">
+                                <div>Confidence: <strong id="confidenceResult">-</strong></div>
+                                <div style="height: 20px; background: #e0e0e0; border-radius: 10px; margin-top: 5px;">
+                                    <div id="confidenceBar" style="height: 20px; background: linear-gradient(90deg, #27ae60, #f39c12); border-radius: 10px; width: 0%;"></div>
                                 </div>
                             </div>
-                            
-                            <div class="treatment-box">
-                                <h4><i class="fas fa-capsules"></i> Diagnosis</h4>
-                                <div id="treatmentText" class="treatment-text">
-                                    Treatment recommendations will appear here after analysis...
-                                </div>
-                            </div>
-                            
-                            <div class="action-buttons">
-                                <button class="btn btn-primary" id="saveResultBtn">
-                                    <i class="fas fa-save"></i> Save to History
-                                </button>
-                                <button class="btn btn-outline" id="newAnalysisBtn">
-                                    <i class="fas fa-redo"></i> Analyze Another
-                                </button>
-                            </div>
+                            <div id="symptomsResult" style="margin: 15px 0;"></div>
+                            <div id="treatmentResult"></div>
                         </div>
                     </div>
                 </div>
@@ -175,397 +148,218 @@
                     </div>
                     <div class="stats-grid">
                         <div class="stat-item">
-                            <div class="stat-icon success">
-                                <i class="fas fa-check"></i>
-                            </div>
-                            <div class="stat-info">
-                                <h3 id="statHealthy">0</h3>
-                                <p>Healthy Fish</p>
-                            </div>
+                            <div class="stat-icon success"><i class="fas fa-check"></i></div>
+                            <div class="stat-info"><h3 id="statHealthy">0</h3><p>Healthy Fish</p></div>
                         </div>
                         <div class="stat-item">
-                            <div class="stat-icon warning">
-                                <i class="fas fa-exclamation"></i>
-                            </div>
-                            <div class="stat-info">
-                                <h3 id="statWarning">0</h3>
-                                <p>Minor Issues</p>
-                            </div>
+                            <div class="stat-icon warning"><i class="fas fa-exclamation"></i></div>
+                            <div class="stat-info"><h3 id="statWarning">0</h3><p>Minor Issues</p></div>
                         </div>
                         <div class="stat-item">
-                            <div class="stat-icon danger">
-                                <i class="fas fa-times"></i>
-                            </div>
-                            <div class="stat-info">
-                                <h3 id="statCritical">0</h3>
-                                <p>Critical Cases</p>
-                            </div>
+                            <div class="stat-icon danger"><i class="fas fa-times"></i></div>
+                            <div class="stat-info"><h3 id="statCritical">0</h3><p>Critical Cases</p></div>
                         </div>
                         <div class="stat-item">
-                            <div class="stat-icon info">
-                                <i class="fas fa-percentage"></i>
-                            </div>
-                            <div class="stat-info">
-                                <h3 id="statAccuracy">0%</h3>
-                                <p>AI Accuracy</p>
-                            </div>
+                            <div class="stat-icon info"><i class="fas fa-percentage"></i></div>
+                            <div class="stat-info"><h3 id="statAccuracy">0%</h3><p>AI Accuracy</p></div>
                         </div>
                     </div>
                 </div>
             </div>
             
-            <!-- Right Column -->
+            <!-- Right Column (keep existing) -->
             <div class="right-column">
-                <!-- Recent History -->
                 <div class="card">
                     <div class="card-header">
                         <h2><i class="fas fa-history"></i> Recent History</h2>
                         <a href="history.html" class="view-all">View All</a>
                     </div>
                     <div class="history-list" id="recentHistory">
-                        <div class="empty-state">
-                            <i class="fas fa-clock"></i>
-                            <p>No scans yet. Upload your first fish image!</p>
-                        </div>
+                        <div class="empty-state"><i class="fas fa-clock"></i><p>No scans yet.</p></div>
                     </div>
                 </div>
                 
-                <!-- PH Monitoring -->
                 <div class="card">
                     <div class="card-header">
                         <h2><i class="fas fa-tint"></i> PH Monitoring</h2>
                         <span class="status-badge" id="phStatus">Disconnected</span>
                     </div>
-                    
                     <div class="ph-container">
-                        <div class="ph-display">
-                            <div class="ph-value">
-                                <h1 id="phReading">--.--</h1>
-                                <p>Current PH Level</p>
-                            </div>
-                            <div class="ph-gauge">
-                                <div class="gauge">
-                                    <div class="gauge-fill" id="phGaugeFill"></div>
-                                </div>
-                                <div class="gauge-labels">
-                                    <span>0</span>
-                                    <span>7</span>
-                                    <span>14</span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="ph-info">
-                            <div class="info-item">
-                                <i class="fas fa-thermometer-half"></i>
-                                <div>
-                                    <h4>Temperature</h4>
-                                    <p id="tempValue">-- °C</p>
-                                </div>
-                            </div>
-                            <div class="info-item">
-                                <i class="fas fa-water"></i>
-                                <div>
-                                    <h4>Turbidity</h4>
-                                    <p id="turbidityValue">-- NTU</p>
-                                </div>
-                            </div>
-                        </div>
-                        
+                        <div class="ph-value"><h1 id="phReading">--.--</h1><p>Current PH Level</p></div>
                         <div class="ph-actions">
-                            <button class="btn btn-primary" id="refreshPHBtn">
-                                <i class="fas fa-sync-alt"></i> Refresh Data
-                            </button>
-                            <button class="btn btn-outline" id="connectHardwareBtn">
-                                <i class="fas fa-microchip"></i> Connect Hardware
-                            </button>
+                            <button class="btn btn-primary" id="refreshPHBtn"><i class="fas fa-sync-alt"></i> Refresh</button>
                         </div>
-                        
-                        <div class="ph-note">
-                            <i class="fas fa-info-circle"></i>
-                            <p>Connect your hardware device for real-time monitoring</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Quick Actions -->
-                <div class="card">
-                    <div class="card-header">
-                        <h2><i class="fas fa-bolt"></i> Quick Actions</h2>
-                    </div>
-                    <div class="actions-grid">
-                        <button class="action-btn" onclick="window.location.href='history.html'">
-                            <i class="fas fa-history"></i>
-                            <span>View Full History</span>
-                        </button>
-                        <button class="action-btn" onclick="window.location.href='profile.html'">
-                            <i class="fas fa-user-cog"></i>
-                            <span>Update Profile</span>
-                        </button>
-                        <button class="action-btn" id="exportDataBtn">
-                            <i class="fas fa-download"></i>
-                            <span>Export Data</span>
-                        </button>
-                        <button class="action-btn" id="showTipsBtn">
-                            <i class="fas fa-lightbulb"></i>
-                            <span>Fish Care Tips</span>
-                        </button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Footer -->
     <footer>
         <p>© 2026 Healthy-Fins - AI Fish Disease Detection System</p>
-        <p>For aquaculture professionals and hobbyists</p>
     </footer>
 
-    <!-- JavaScript -->
     <script src="auth.js"></script>
     <script src="script.js"></script>
     
     <script>
-        // ============================================
-        // COMPLETE FIXED FUNCTIONALITY
-        // ============================================
+        // ========== SIMPLE WORKING UPLOAD SYSTEM ==========
         
-        // Global variable for current file
-        let currentFile = null;
+        let selectedFile = null;
         
-        // Initialize everything when page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            // Check authentication
-            if (!checkAuth()) {
-                window.location.href = 'index.html';
-                return;
-            }
-            
-            // Load user data
-            loadUserData();
-            loadDashboardStats();
-            loadRecentHistory();
-            loadPHData();
-            
-            // Setup logout
-            document.getElementById('logoutBtn').addEventListener('click', logout);
-            
-            // Setup PH monitoring button
-            document.getElementById('phMonitoringBtn').addEventListener('click', function(e) {
-                e.preventDefault();
-                loadPHData(true);
-            });
-            
-            // Setup user dropdown
-            setupUserDropdown();
-            
-            // Setup file upload
-            setupFileUpload();
-            
-            // Setup PH buttons
-            const refreshPHBtn = document.getElementById('refreshPHBtn');
-            if (refreshPHBtn) refreshPHBtn.onclick = () => refreshPHData();
-            
-            const connectHardwareBtn = document.getElementById('connectHardwareBtn');
-            if (connectHardwareBtn) connectHardwareBtn.onclick = () => connectHardware();
-            
-            // Setup quick action buttons
-            const exportDataBtn = document.getElementById('exportDataBtn');
-            if (exportDataBtn) exportDataBtn.onclick = () => exportData();
-            
-            const showTipsBtn = document.getElementById('showTipsBtn');
-            if (showTipsBtn) showTipsBtn.onclick = () => showTips();
-        });
+        // Get elements
+        const clickToUpload = document.getElementById('clickToUpload');
+        const fileInput = document.getElementById('imageFile');
+        const previewContainer = document.getElementById('previewContainer');
+        const previewImg = document.getElementById('previewImg');
+        const loadingContainer = document.getElementById('loadingContainer');
+        const resultsContainer = document.getElementById('resultsContainer');
+        const analyzeBtn = document.getElementById('analyzeImageBtn');
+        const clearBtn = document.getElementById('clearImageBtn');
         
-        // ========== FIXED FILE UPLOAD FUNCTION ==========
-        function setupFileUpload() {
-            const uploadArea = document.getElementById('uploadArea');
-            const fileInput = document.getElementById('fileInput');
-            const previewSection = document.getElementById('previewSection');
-            const previewImage = document.getElementById('previewImage');
-            const analyzeBtn = document.getElementById('analyzeBtn');
-            const clearBtn = document.getElementById('clearBtn');
-            const loadingSection = document.getElementById('loadingSection');
-            const resultsSection = document.getElementById('resultsSection');
-            const saveResultBtn = document.getElementById('saveResultBtn');
-            const newAnalysisBtn = document.getElementById('newAnalysisBtn');
-            
-            if (!uploadArea || !fileInput) {
-                console.error('Upload elements not found');
-                return;
-            }
-            
-            // Upload area click
-            uploadArea.onclick = () => {
-                console.log('📁 Opening file picker...');
+        // Click to upload
+        if (clickToUpload) {
+            clickToUpload.onclick = function() {
+                console.log('📁 Opening file picker');
                 fileInput.click();
             };
-            
-            // File input change
-            fileInput.onchange = (e) => {
+        }
+        
+        // File selected
+        if (fileInput) {
+            fileInput.onchange = function(e) {
                 const file = e.target.files[0];
                 if (!file) return;
                 
-                console.log('✅ File selected:', file.name);
-                currentFile = file;
+                console.log('✅ Selected:', file.name);
+                selectedFile = file;
                 window.currentFile = file;
                 
+                // Show preview
                 const reader = new FileReader();
-                reader.onload = (ev) => {
-                    if (previewImage) previewImage.src = ev.target.result;
-                    if (previewSection) previewSection.style.display = 'block';
-                    if (uploadArea) uploadArea.style.display = 'none';
-                    if (loadingSection) loadingSection.style.display = 'none';
-                    if (resultsSection) resultsSection.style.display = 'none';
-                    console.log('✅ Preview ready! Click Analyze Now');
+                reader.onload = function(ev) {
+                    previewImg.src = ev.target.result;
+                    previewContainer.style.display = 'block';
+                    clickToUpload.style.display = 'none';
+                    loadingContainer.style.display = 'none';
+                    resultsContainer.style.display = 'none';
+                    console.log('✅ Preview ready');
                 };
                 reader.readAsDataURL(file);
             };
-            
-            // Analyze button
-            if (analyzeBtn) {
-                analyzeBtn.onclick = async () => {
-                    console.log('🔍 Analyze button clicked');
+        }
+        
+        // Clear button
+        if (clearBtn) {
+            clearBtn.onclick = function() {
+                selectedFile = null;
+                window.currentFile = null;
+                previewContainer.style.display = 'none';
+                clickToUpload.style.display = 'block';
+                fileInput.value = '';
+                resultsContainer.style.display = 'none';
+                console.log('✅ Cleared');
+            };
+        }
+        
+        // Analyze button
+        if (analyzeBtn) {
+            analyzeBtn.onclick = async function() {
+                if (!selectedFile && !window.currentFile) {
+                    alert('Please select an image first');
+                    return;
+                }
+                
+                const file = selectedFile || window.currentFile;
+                console.log('🔍 Analyzing:', file.name);
+                
+                const token = localStorage.getItem('healthyfins_token') || localStorage.getItem('token');
+                if (!token) {
+                    alert('Please login again');
+                    return;
+                }
+                
+                // Show loading
+                previewContainer.style.display = 'none';
+                loadingContainer.style.display = 'block';
+                resultsContainer.style.display = 'none';
+                
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                try {
+                    const response = await fetch('https://healthyfins.onrender.com/predict', {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${token}` },
+                        body: formData
+                    });
                     
-                    if (!currentFile && !window.currentFile) {
-                        alert('Please select an image first!');
-                        return;
-                    }
+                    const result = await response.json();
+                    console.log('Result:', result);
                     
-                    const fileToAnalyze = currentFile || window.currentFile;
-                    console.log('Analyzing:', fileToAnalyze.name);
+                    loadingContainer.style.display = 'none';
                     
-                    const token = localStorage.getItem('healthyfins_token') || localStorage.getItem('token');
-                    if (!token) {
-                        alert('Please login again');
-                        return;
-                    }
-                    
-                    if (loadingSection) loadingSection.style.display = 'block';
-                    if (previewSection) previewSection.style.display = 'none';
-                    if (resultsSection) resultsSection.style.display = 'none';
-                    
-                    const formData = new FormData();
-                    formData.append('file', fileToAnalyze);
-                    
-                    try {
-                        const response = await fetch('https://healthyfins.onrender.com/predict', {
-                            method: 'POST',
-                            headers: { 'Authorization': `Bearer ${token}` },
-                            body: formData
-                        });
+                    if (result.success) {
+                        resultsContainer.style.display = 'block';
+                        document.getElementById('diagnosisResult').textContent = result.prediction;
+                        document.getElementById('confidenceResult').textContent = `${result.confidence}%`;
+                        document.getElementById('confidenceBar').style.width = `${result.confidence}%`;
                         
-                        const result = await response.json();
-                        console.log('📥 Result:', result);
+                        const symptomsHtml = result.symptoms?.length ? 
+                            `<strong>Symptoms:</strong> ${result.symptoms.join(', ')}` : 
+                            '<strong>Symptoms:</strong> None detected';
+                        document.getElementById('symptomsResult').innerHTML = symptomsHtml;
                         
-                        if (loadingSection) loadingSection.style.display = 'none';
+                        document.getElementById('treatmentResult').innerHTML = `
+                            <strong>Recommendation:</strong><br>
+                            ${result.urgent ? '<span style="color:red;">⚠️ URGENT: Immediate attention needed!</span><br>' : ''}
+                            ${result.prediction.includes('Healthy') ? 
+                                'Continue regular maintenance. Monitor water parameters.' : 
+                                'Consult a veterinarian for proper treatment.'}
+                        `;
                         
-                        if (result.success) {
-                            if (resultsSection) resultsSection.style.display = 'block';
-                            
-                            document.getElementById('resultDisease').textContent = result.prediction;
-                            document.getElementById('confidenceValue').textContent = `${result.confidence}%`;
-                            const fill = document.getElementById('confidenceFill');
-                            if (fill) fill.style.width = `${result.confidence}%`;
-                            
-                            const badge = document.getElementById('diseaseBadge');
-                            if (badge) {
-                                badge.textContent = result.prediction.includes('Healthy') ? 'Healthy' : 'Disease';
-                                badge.className = 'badge ' + (result.prediction.includes('Healthy') ? 'badge-success' : 'badge-danger');
-                            }
-                            
-                            const treatmentText = document.getElementById('treatmentText');
-                            if (treatmentText) {
-                                treatmentText.innerHTML = `
-                                    <strong>Diagnosis:</strong> ${result.prediction}<br>
-                                    <strong>Confidence:</strong> ${result.confidence}%<br>
-                                    <strong>Symptoms:</strong> ${result.symptoms?.join(', ') || 'None detected'}<br>
-                                    ${result.urgent ? '<strong style="color:red;">⚠️ URGENT: Immediate action needed!</strong>' : ''}
-                                `;
-                            }
-                            
-                            alert(`✅ ${result.prediction}\nConfidence: ${result.confidence}%`);
-                        } else {
-                            alert('Analysis failed: ' + (result.detail || 'Unknown error'));
-                            if (previewSection) previewSection.style.display = 'block';
-                        }
-                    } catch (error) {
-                        console.error('Error:', error);
-                        if (loadingSection) loadingSection.style.display = 'none';
-                        alert('Error: ' + error.message);
-                        if (previewSection) previewSection.style.display = 'block';
-                    }
-                };
-            }
-            
-            // Clear button
-            if (clearBtn) {
-                clearBtn.onclick = () => {
-                    currentFile = null;
-                    window.currentFile = null;
-                    if (previewSection) previewSection.style.display = 'none';
-                    if (uploadArea) uploadArea.style.display = 'block';
-                    if (fileInput) fileInput.value = '';
-                    if (resultsSection) resultsSection.style.display = 'none';
-                    if (loadingSection) loadingSection.style.display = 'none';
-                    console.log('✅ Cleared');
-                };
-            }
-            
-            // New analysis button
-            if (newAnalysisBtn) {
-                newAnalysisBtn.onclick = () => {
-                    if (clearBtn) clearBtn.click();
-                };
-            }
-            
-            // Save result button
-            if (saveResultBtn) {
-                saveResultBtn.onclick = () => {
-                    if (window.currentResult) {
-                        alert('Result saved to history!');
-                        // You can add actual save logic here
+                        alert(`✅ ${result.prediction}\nConfidence: ${result.confidence}%`);
                     } else {
-                        alert('No result to save');
+                        alert('Analysis failed');
+                        previewContainer.style.display = 'block';
                     }
-                };
-            }
-            
-            console.log('✅ File upload setup complete');
+                } catch (error) {
+                    console.error('Error:', error);
+                    loadingContainer.style.display = 'none';
+                    alert('Error: ' + error.message);
+                    previewContainer.style.display = 'block';
+                }
+            };
         }
         
-        // ========== HELPER FUNCTIONS ==========
-        function exportData() {
-            alert('Export feature coming soon!');
+        // PH Refresh
+        const refreshPHBtn = document.getElementById('refreshPHBtn');
+        if (refreshPHBtn) {
+            refreshPHBtn.onclick = () => {
+                if (typeof loadPHData === 'function') loadPHData(true);
+                else alert('PH data refresh');
+            };
         }
         
-        function showTips() {
-            alert('Fish Care Tips:\n\n1. Maintain water temperature: 24-28°C\n2. PH level: 6.5-8.0\n3. Regular water changes: 20-25% weekly\n4. Test water parameters regularly\n5. Quarantine new fish for 2 weeks\n6. Avoid overfeeding');
+        // Logout
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.onclick = () => {
+                localStorage.clear();
+                window.location.href = 'index.html';
+            };
         }
         
-        // Make functions globally accessible
-        window.analyzeImage = async () => {
-            const analyzeBtn = document.getElementById('analyzeBtn');
-            if (analyzeBtn) analyzeBtn.click();
-        };
+        // Load user data
+        const user = JSON.parse(localStorage.getItem('user'));
+        if (user) {
+            const userNameSpan = document.getElementById('userName');
+            const userGreetingSpan = document.getElementById('userGreeting');
+            if (userNameSpan) userNameSpan.textContent = user.name || 'User';
+            if (userGreetingSpan) userGreetingSpan.textContent = user.name || 'User';
+        }
         
-        window.clearImage = () => {
-            const clearBtn = document.getElementById('clearBtn');
-            if (clearBtn) clearBtn.click();
-        };
-        
-        window.newAnalysis = () => {
-            const newAnalysisBtn = document.getElementById('newAnalysisBtn');
-            if (newAnalysisBtn) newAnalysisBtn.click();
-        };
-        
-        window.saveResult = () => {
-            const saveResultBtn = document.getElementById('saveResultBtn');
-            if (saveResultBtn) saveResultBtn.click();
-        };
-        
-        console.log('✅ Dashboard fully initialized');
+        console.log('✅ Dashboard ready - Click the upload area to select an image');
     </script>
 </body>
 </html>
