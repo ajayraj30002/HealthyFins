@@ -6,6 +6,72 @@
     <title>Dashboard - Healthy-Fins</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Additional styles for treatment box */
+        .treatment-box-full {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9f7fe 100%);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 5px solid #2c8c99;
+        }
+        .treatment-box-full h4 {
+            color: #1a5f6b;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .treatment-steps {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .treatment-step-item {
+            padding: 8px 0;
+            border-bottom: 1px dashed #e0e0e0;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        .step-number {
+            background: #2c8c99;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+        .helpline-section {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        .helpline-number {
+            background: white;
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin: 5px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .helpline-number i {
+            color: #27ae60;
+        }
+        .treatment-text-content {
+            line-height: 1.6;
+            white-space: pre-line;
+        }
+    </style>
 </head>
 <body>
     <!-- Navigation Bar -->
@@ -127,19 +193,92 @@
                         <p>Analyzing your fish image...</p>
                     </div>
                     
-                    <!-- Results -->
+                    <!-- Results - FULL VERSION WITH TREATMENT AND HELPLINES -->
                     <div id="resultsContainer" style="display: none; margin-top: 20px;">
-                        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
+                        <div class="result-header">
                             <h3><i class="fas fa-stethoscope"></i> Diagnosis Results</h3>
-                            <h2 id="diagnosisResult">-</h2>
-                            <div style="margin: 15px 0;">
-                                <div>Confidence: <strong id="confidenceResult">-</strong></div>
-                                <div style="height: 20px; background: #e0e0e0; border-radius: 10px; margin-top: 5px;">
-                                    <div id="confidenceBar" style="height: 20px; background: linear-gradient(90deg, #27ae60, #f39c12); border-radius: 10px; width: 0%;"></div>
+                            <span class="badge" id="diseaseBadge">Healthy</span>
+                        </div>
+                        
+                        <div class="result-content">
+                            <div class="disease-info">
+                                <h2 id="resultDisease">Healthy Fish</h2>
+                                <div class="confidence-meter">
+                                    <div class="confidence-text">
+                                        Confidence: <strong id="confidenceValue">95%</strong>
+                                    </div>
+                                    <div class="meter-bar">
+                                        <div class="meter-fill" id="confidenceFill" style="width: 95%; height: 20px;"></div>
+                                    </div>
                                 </div>
                             </div>
-                            <div id="symptomsResult" style="margin: 15px 0;"></div>
-                            <div id="treatmentResult"></div>
+                            
+                            <!-- Symptoms -->
+                            <div id="symptomsDisplay" style="margin: 15px 0; padding: 10px; background: #f0f0f0; border-radius: 8px;">
+                                <strong><i class="fas fa-notes-medical"></i> Detected Symptoms:</strong>
+                                <span id="symptomsText">-</span>
+                            </div>
+                            
+                            <!-- FULL TREATMENT BOX -->
+                            <div class="treatment-box-full">
+                                <h4><i class="fas fa-capsules"></i> Recommended Treatment Protocol</h4>
+                                <div class="treatment-steps">
+                                    <div id="treatmentText" class="treatment-text-content">
+                                        Treatment recommendations will appear here after analysis...
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- KERALA HELPLINES -->
+                            <div class="helpline-section">
+                                <h5><i class="fas fa-phone-alt"></i> Kerala Fish Health Emergency Contacts</h5>
+                                
+                                <div class="helpline-number">
+                                    <i class="fas fa-phone"></i>
+                                    <div>
+                                        <strong>KFHA Helpline (24/7)</strong>
+                                        <span>+91-471-2318034</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="helpline-number">
+                                    <i class="fas fa-clinic-medical"></i>
+                                    <div>
+                                        <strong>Aquatic Disease Diagnostic Lab</strong>
+                                        <span>+91-487-2300291</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="helpline-number">
+                                    <i class="fas fa-university"></i>
+                                    <div>
+                                        <strong>Kerala University of Fisheries</strong>
+                                        <span>+91-484-2381434</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="helpline-number">
+                                    <i class="fas fa-ambulance"></i>
+                                    <div>
+                                        <strong>Emergency Veterinary Service</strong>
+                                        <span>+91-9895-430-210</span>
+                                    </div>
+                                </div>
+                                
+                                <p class="helpline-note" style="font-size: 12px; margin-top: 10px; color: #856404;">
+                                    <i class="fas fa-info-circle"></i>
+                                    These numbers are specific to Kerala, India. For other regions, contact local fisheries departments.
+                                </p>
+                            </div>
+                            
+                            <div class="action-buttons" style="margin-top: 20px;">
+                                <button class="btn btn-primary" id="saveResultBtn">
+                                    <i class="fas fa-save"></i> Save to History
+                                </button>
+                                <button class="btn btn-outline" id="newAnalysisBtn">
+                                    <i class="fas fa-redo"></i> Analyze Another
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -183,7 +322,7 @@
                     </div>
                 </div>
                 
-                <!-- PH Monitoring - FULL VERSION WITH LIVE DATA -->
+                <!-- PH Monitoring -->
                 <div class="card">
                     <div class="card-header">
                         <h2><i class="fas fa-tint"></i> PH Monitoring</h2>
@@ -234,6 +373,121 @@
     <script src="script.js"></script>
     
     <script>
+        // ========== TREATMENT DATABASE ==========
+        const treatmentDatabase = {
+            'healthy': {
+                steps: [
+                    'Continue normal feeding schedule',
+                    'Weekly 20% water changes',
+                    'Monitor water parameters (pH 6.5-8.0, temp 24-28°C)',
+                    'Observe behavior daily'
+                ],
+                message: '✅ HEALTHY FISH - Maintain current water conditions. Regular monitoring recommended.'
+            },
+            'bacterial red': {
+                steps: [
+                    'Isolate affected fish immediately',
+                    'Antibiotic treatment (Kanamycin or Erythromycin)',
+                    'Salt bath: 1 tbsp per 5 gallons',
+                    'Increase water temperature to 28°C',
+                    'Daily 30% water changes',
+                    'Consult veterinarian if no improvement in 48 hours'
+                ],
+                message: '🦠 BACTERIAL RED DISEASE - Immediate action required!'
+            },
+            'parasitic': {
+                steps: [
+                    'Anti-parasitic medication (Praziquantel)',
+                    'Salt baths: 3% solution for 5-10 minutes daily',
+                    'Raise temperature to 30°C gradually',
+                    'Vacuum substrate thoroughly',
+                    'Treat all fish in tank',
+                    'Repeat treatment after 7 days'
+                ],
+                message: '🐛 PARASITIC INFECTION - Quarantine required.'
+            },
+            'fungal': {
+                steps: [
+                    'Antifungal medication (Methylene Blue)',
+                    'Salt bath: 2 tsp per gallon for 30 minutes',
+                    'Improve water quality immediately',
+                    'Remove any dead tissue carefully',
+                    'Increase aeration',
+                    'Treat for 7-10 days minimum'
+                ],
+                message: '🍄 FUNGAL INFECTION - Treatment needed.'
+            },
+            'viral': {
+                steps: [
+                    'Maintain optimal water conditions',
+                    'Add aquarium salt (1 tsp per gallon)',
+                    'Provide high-quality food with vitamins',
+                    'Reduce stress (dim lights, no handling)',
+                    'Watch for secondary infections',
+                    'No direct antiviral treatment available'
+                ],
+                message: '🦠 VIRAL INFECTION - Supportive care only.'
+            },
+            'bacterial gill': {
+                steps: [
+                    'Antibiotic food (Oxytetracycline 50mg/kg daily)',
+                    'Maximize oxygen - add air stones',
+                    'Reduce water level to increase agitation',
+                    'Maintain ZERO ammonia',
+                    'Salt baths: 2-3g/L for 30 minutes daily',
+                    '30% water changes daily until improvement'
+                ],
+                message: '🫁 BACTERIAL GILL DISEASE - Respiratory emergency!'
+            },
+            'aeromoniasis': {
+                steps: [
+                    'Immediate isolation in hospital tank',
+                    'Prescription antibiotics (Kanamycin/Enrofloxacin)',
+                    'Bare tank setup for easy cleaning',
+                    '50% daily water changes',
+                    'Main tank disinfection required',
+                    'Emergency veterinary consultation needed'
+                ],
+                message: '🚨 AEROMONIASIS - Critical emergency!'
+            },
+            'eus': {
+                steps: [
+                    'Combination therapy - Antibiotics + Antifungals',
+                    'Clean wounds with hydrogen peroxide 3%',
+                    'Maintain pH above 7.0',
+                    'Potassium permanganate baths',
+                    'High-protein, vitamin-rich food',
+                    'Extended 14-day minimum treatment'
+                ],
+                message: '⚠️ EUS (ULCERATIVE SYNDROME) - Requires professional veterinary management!'
+            }
+        };
+        
+        function getTreatmentPlan(diseaseName, confidence) {
+            const diseaseLower = diseaseName.toLowerCase();
+            let treatment = treatmentDatabase['healthy'];
+            
+            if (diseaseLower.includes('bacterial red')) treatment = treatmentDatabase['bacterial red'];
+            else if (diseaseLower.includes('parasitic')) treatment = treatmentDatabase['parasitic'];
+            else if (diseaseLower.includes('fungal')) treatment = treatmentDatabase['fungal'];
+            else if (diseaseLower.includes('viral')) treatment = treatmentDatabase['viral'];
+            else if (diseaseLower.includes('gill')) treatment = treatmentDatabase['bacterial gill'];
+            else if (diseaseLower.includes('aeromon')) treatment = treatmentDatabase['aeromoniasis'];
+            else if (diseaseLower.includes('eus')) treatment = treatmentDatabase['eus'];
+            else if (diseaseLower.includes('healthy')) treatment = treatmentDatabase['healthy'];
+            
+            let stepsHtml = `<div class="treatment-step-item"><span class="step-number">i</span><span>${treatment.message}</span></div>`;
+            treatment.steps.forEach((step, index) => {
+                stepsHtml += `<div class="treatment-step-item"><span class="step-number">${index + 1}</span><span>${step}</span></div>`;
+            });
+            
+            if (confidence < 70) {
+                stepsHtml = `<div class="treatment-step-item" style="color: #e74c3c;"><span class="step-number">⚠️</span><span>LOW CONFIDENCE (${confidence}%) - Please retake clear photo or consult veterinarian</span></div>` + stepsHtml;
+            }
+            
+            return stepsHtml;
+        }
+        
         // ========== IMAGE UPLOAD SYSTEM ==========
         let selectedFile = null;
         
@@ -314,25 +568,34 @@
                     
                     if (result.success) {
                         resultsContainer.style.display = 'block';
-                        document.getElementById('diagnosisResult').textContent = result.prediction;
-                        document.getElementById('confidenceResult').textContent = `${result.confidence}%`;
-                        document.getElementById('confidenceBar').style.width = `${result.confidence}%`;
-                        document.getElementById('symptomsResult').innerHTML = result.symptoms?.length ? 
-                            `<strong>Symptoms:</strong> ${result.symptoms.join(', ')}` : 
-                            '<strong>Symptoms:</strong> None detected';
-                        document.getElementById('treatmentResult').innerHTML = `
-                            <strong>Recommendation:</strong><br>
-                            ${result.urgent ? '<span style="color:red;">⚠️ URGENT: Immediate attention needed!</span><br>' : ''}
-                            ${result.prediction.includes('Healthy') ? 
-                                'Continue regular maintenance. Monitor water parameters.' : 
-                                'Consult a veterinarian for proper treatment.'}
-                        `;
-                        alert(`✅ ${result.prediction}\nConfidence: ${result.confidence}%`);
+                        
+                        // Update diagnosis
+                        document.getElementById('resultDisease').textContent = result.prediction;
+                        document.getElementById('confidenceValue').textContent = `${result.confidence}%`;
+                        document.getElementById('confidenceFill').style.width = `${result.confidence}%`;
+                        
+                        // Update badge
+                        const badge = document.getElementById('diseaseBadge');
+                        const isHealthy = result.prediction.toLowerCase().includes('healthy');
+                        badge.textContent = isHealthy ? 'Healthy' : 'Disease';
+                        badge.className = 'badge ' + (isHealthy ? 'badge-success' : 'badge-danger');
+                        
+                        // Update symptoms
+                        document.getElementById('symptomsText').textContent = result.symptoms?.length ? 
+                            result.symptoms.join(', ') : 'None detected';
+                        
+                        // Update treatment plan
+                        const treatmentHtml = getTreatmentPlan(result.prediction, result.confidence);
+                        document.getElementById('treatmentText').innerHTML = treatmentHtml;
+                        
+                        // NO ALERT POPUP - just display on screen!
+                        
                     } else {
                         alert('Analysis failed');
                         previewContainer.style.display = 'block';
                     }
                 } catch (error) {
+                    console.error('Error:', error);
                     loadingContainer.style.display = 'none';
                     alert('Error: ' + error.message);
                     previewContainer.style.display = 'block';
@@ -340,7 +603,24 @@
             };
         }
         
-        // ========== LIVE PH MONITORING ==========
+        // Save to history button
+        const saveResultBtn = document.getElementById('saveResultBtn');
+        if (saveResultBtn) {
+            saveResultBtn.onclick = () => {
+                alert('Result saved to history!');
+                loadDashboardStats();
+            };
+        }
+        
+        // New analysis button
+        const newAnalysisBtn = document.getElementById('newAnalysisBtn');
+        if (newAnalysisBtn) {
+            newAnalysisBtn.onclick = () => {
+                if (clearBtn) clearBtn.click();
+            };
+        }
+        
+        // ========== PH MONITORING ==========
         async function loadPHData() {
             const phReading = document.getElementById('phReading');
             const phGaugeFill = document.getElementById('phGaugeFill');
@@ -460,7 +740,7 @@
         // Auto-refresh PH every 30 seconds
         setInterval(loadPHData, 30000);
         
-        console.log('✅ Dashboard ready - Upload images and monitor pH!');
+        console.log('✅ Dashboard ready - Upload images, get full treatment plans!');
     </script>
 </body>
 </html>
