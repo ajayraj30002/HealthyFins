@@ -234,51 +234,86 @@
                     </div>
                 </div>
                 
-                <!-- Quick Stats -->
+                <!-- Disease Detection Card - REPLACE THIS ENTIRE SECTION -->
                 <div class="card">
                     <div class="card-header">
-                        <h2><i class="fas fa-chart-bar"></i> Quick Stats</h2>
+                        <h2><i class="fas fa-camera"></i> Disease Detection</h2>
+                        <p>Upload fish image for AI analysis</p>
                     </div>
-                    <div class="stats-grid">
-                        <div class="stat-item">
-                            <div class="stat-icon success">
-                                <i class="fas fa-check"></i>
-                            </div>
-                            <div class="stat-info">
-                                <h3 id="statHealthy">0</h3>
-                                <p>Healthy Fish</p>
-                            </div>
+                    
+                    <!-- UPLOAD AREA - NEW FIXED VERSION -->
+                    <div class="upload-area" id="uploadArea" style="cursor: pointer; border: 3px dashed #2c8c99; border-radius: 12px; padding: 48px; text-align: center; background: #e9f7fe; margin-bottom: 20px;">
+                        <div class="upload-icon">
+                            <i class="fas fa-cloud-upload-alt"></i>
                         </div>
-                        <div class="stat-item">
-                            <div class="stat-icon warning">
-                                <i class="fas fa-exclamation"></i>
-                            </div>
-                            <div class="stat-info">
-                                <h3 id="statWarning">0</h3>
-                                <p>Minor Issues</p>
-                            </div>
+                        <h3>Drop image here or click to browse</h3>
+                        <p>Supports JPG, PNG, BMP • Max 10MB</p>
+                        <button class="btn btn-primary" id="uploadBtn">
+                            <i class="fas fa-upload"></i> Choose Image
+                        </button>
+                        <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                    </div>
+                    
+                    <!-- PREVIEW SECTION -->
+                    <div class="preview-section" id="previewSection" style="display: none;">
+                        <h4>Image Preview</h4>
+                        <div class="image-preview">
+                            <img id="previewImage" src="" alt="Preview" style="max-width: 100%; max-height: 300px;">
                         </div>
-                        <div class="stat-item">
-                            <div class="stat-icon danger">
-                                <i class="fas fa-times"></i>
-                            </div>
-                            <div class="stat-info">
-                                <h3 id="statCritical">0</h3>
-                                <p>Critical Cases</p>
-                            </div>
+                        <div class="preview-actions" style="margin-top: 15px;">
+                            <button class="btn btn-primary" id="analyzeBtn">
+                                <i class="fas fa-search"></i> Analyze Now
+                            </button>
+                            <button class="btn btn-outline" id="clearBtn">
+                                <i class="fas fa-times"></i> Remove
+                            </button>
                         </div>
-                        <div class="stat-item">
-                            <div class="stat-icon info">
-                                <i class="fas fa-percentage"></i>
-                            </div>
-                            <div class="stat-info">
-                                <h3 id="statAccuracy">0%</h3>
-                                <p>AI Accuracy</p>
-                            </div>
-                        </div>
+                    </div>
+                    
+                    <!-- Loading -->
+                    <div class="loading" id="loadingSection" style="display: none; text-align: center; padding: 48px;">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Analyzing your fish image...</p>
+                    </div>
+    
+    <!-- Results -->
+    <div class="results-section" id="resultsSection" style="display: none;">
+        <div class="result-header">
+            <h3><i class="fas fa-stethoscope"></i> Diagnosis Results</h3>
+            <span class="badge" id="diseaseBadge">Healthy</span>
+        </div>
+        
+        <div class="result-content">
+            <div class="disease-info">
+                <h2 id="resultDisease">Healthy Fish</h2>
+                <div class="confidence-meter">
+                    <div class="confidence-text">
+                        Confidence: <strong id="confidenceValue">95%</strong>
+                    </div>
+                    <div class="meter-bar">
+                        <div class="meter-fill" id="confidenceFill" style="width: 95%; height: 20px; background: linear-gradient(90deg, #27ae60, #f39c12); border-radius: 10px;"></div>
                     </div>
                 </div>
             </div>
+            
+            <div class="treatment-box">
+                <h4><i class="fas fa-capsules"></i> Diagnosis</h4>
+                <div id="treatmentText" class="treatment-text">
+                    Treatment recommendations will appear here after analysis...
+                </div>
+            </div>
+            
+            <div class="action-buttons">
+                <button class="btn btn-primary" id="saveResultBtn">
+                    <i class="fas fa-save"></i> Save to History
+                </button>
+                <button class="btn btn-outline" id="newAnalysisBtn">
+                    <i class="fas fa-redo"></i> Analyze Another
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
             
             <!-- Right Column -->
             <div class="right-column">
