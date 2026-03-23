@@ -454,9 +454,6 @@ function displayRecentHistory(history) {
     container.innerHTML = html;
 }
 
-// ========== FILE UPLOAD FUNCTIONS ==========
-
-// Setup file upload functionality
 function setupFileUpload() {
     const fileInput = document.getElementById('fileInput');
     const uploadArea = document.getElementById('uploadArea');
@@ -468,29 +465,77 @@ function setupFileUpload() {
     
     console.log('✅ Setting up file upload...');
     
-    // Click to upload
+    // ===== FIX: Create a fresh file input to ensure clean event listeners =====
+    const newFileInput = fileInput.cloneNode(true);
+    fileInput.parentNode.replaceChild(newFileInput, fileInput);
+    const finalFileInput = document.getElementById('fileInput');
+    
+    // ===== ADD THE CHANGE EVENT HANDLER (THIS WAS MISSING!) =====
+    finalFileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        console.log('✅ File selected:', file.name);
+        window.currentFile = file;
+        
+        // Show preview
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+            const previewImage = document.getElementById('previewImage');
+            const previewSection = document.getElementById('previewSection');
+            const uploadAreaEl = document.getElementById('uploadArea');
+            
+            if (previewImage) previewImage.src = ev.target.result;
+            if (previewSection) previewSection.style.display = 'block';
+            if (uploadAreaEl) uploadAreaEl.style.display = 'none';
+            
+            console.log('✅ Preview displayed');
+        };
+        reader.readAsDataURL(file);
+    });
+    
+    // ===== CLICK HANDLER FOR UPLOAD AREA =====
     uploadArea.addEventListener('click', () => {
         console.log('📁 Upload area clicked');
-        fileInput.click();
+        finalFileInput.click();
     });
     
-    // File selection handler
-    fileInput.addEventListener('change', handleFileSelect);
-    
-    // Drag and drop handlers
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        uploadArea.addEventListener(eventName, preventDefaults, false);
+    // Also handle drag and drop
+    uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.style.borderColor = '#1a5f6b';
+        uploadArea.style.background = '#e1f5fe';
     });
     
-    ['dragenter', 'dragover'].forEach(eventName => {
-        uploadArea.addEventListener(eventName, highlightArea, false);
+    uploadArea.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        uploadArea.style.borderColor = '#2c8c99';
+        uploadArea.style.background = '#e9f7fe';
     });
     
-    ['dragleave', 'drop'].forEach(eventName => {
-        uploadArea.addEventListener(eventName, unhighlightArea, false);
+    uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.style.borderColor = '#2c8c99';
+        uploadArea.style.background = '#e9f7fe';
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            const file = files[0];
+            if (file.type.startsWith('image/')) {
+                window.currentFile = file;
+                
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                    document.getElementById('previewImage').src = ev.target.result;
+                    document.getElementById('previewSection').style.display = 'block';
+                    document.getElementById('uploadArea').style.display = 'none';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
     });
     
-    uploadArea.addEventListener('drop', handleDrop, false);
+    console.log('✅ File upload setup complete');
 }
 
 function preventDefaults(e) {
