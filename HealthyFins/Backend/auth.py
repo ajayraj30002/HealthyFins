@@ -6,7 +6,7 @@ from fastapi import HTTPException, Header, Depends
 from typing import Optional
 
 # Secret key for JWT - in production, use environment variable
-SECRET_KEY = os.getenv("SECRET_KEY", "healthyfins-secret-key-2025-change-in-production")
+SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 1440  # 24 hours
 
