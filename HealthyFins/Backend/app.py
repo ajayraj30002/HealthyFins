@@ -983,8 +983,6 @@ async def export_history(
 print("\n" + "=" * 60)
 print("🐟 HEALTHYFINS API v5.0 - SUPABASE INTEGRATION")
 print("=" * 60)
-print(f"📡 Backend URL: https://healthyfins.onrender.com")
-print(f"🌐 Frontend URL: https://healthy-fins.vercel.app")
 print(f"💾 Database: Supabase REST API")
 print(f"🔧 Hardware IDs: {len(db.get_hardware_ids()) if db else 0} available")
 print(f"📊 PH Monitoring: Real-time data enabled")
