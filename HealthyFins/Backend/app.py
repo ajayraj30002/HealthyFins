@@ -41,10 +41,7 @@ app = FastAPI(
 )
 
 # ========== CORS CONFIGURATION ==========
-origins = [
-    "https://healthy-fins.vercel.app"
-    
-]
+origins = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", "").split(",") if o.strip()]
 
 app.add_middleware(
     CORSMiddleware,
