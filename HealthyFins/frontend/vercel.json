@@ -1,0 +1,5 @@
+{
+    "outputDirectory": ".",
+    "installCommand": "echo 'No deps'",
+    "buildCommand": "for f in *.html; do sed -i 's|\\${BACKEND_URL}|'\"$BACKEND_URL\"'|g; s|\\${FRONTEND_URL}|'\"$FRONTEND_URL\"'|g' \"$f\"; done"
+}
