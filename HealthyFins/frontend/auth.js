@@ -2,11 +2,8 @@
 
 // ========== CONFIGURATION ==========
 
-// Backend URL - Your Render backend URL
-const BACKEND_URL = "https://healthyfins.onrender.com";
-
-// Frontend URL - Your Vercel frontend
-const FRONTEND_URL = "https://healthy-fins.vercel.app";
+const BACKEND_URL = window.__ENV__?.BACKEND_URL || "";
+const FRONTEND_URL = window.__ENV__?.FRONTEND_URL || "";
 
 // Default demo user (for testing when backend is down)
 const DEMO_USER = {
