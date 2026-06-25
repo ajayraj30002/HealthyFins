@@ -1,4 +1,4 @@
-# 🐟 HealthyFins - Complete Fish Health Management System
+# 🐟 HealthyFins - Complete Fish Health Management System 
 
 [![Live Demo](https://img.shields.io/badge/demo-LIVE-brightgreen)](https://fish-app.vercel.app)
 [![GitHub Repo](https://img.shields.io/badge/repo-HealthyFins-blue)](https://github.com/yourusername/healthyfins)
