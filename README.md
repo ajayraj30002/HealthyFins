@@ -11,7 +11,7 @@
 [![Frontend](https://img.shields.io/badge/Frontend-Vercel-black?logo=vercel)](https://vercel.com)
 [![Backend](https://img.shields.io/badge/Backend-Render-blue?logo=render)](https://render.com)
 [![Docker](https://img.shields.io/badge/Docker-✓-blue?logo=docker)](https://docker.com)
-[![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
+[![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE) 
 
 ---
 
