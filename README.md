@@ -27,6 +27,13 @@ Designed for fish farmers, aquarium hobbyists, and aquaculture researchers, it p
 - 📈 **Trend analysis** and predictive insights
 
 ---
+<br/>
+
+## 🎥 HealthyFins Demo
+
+https://github.com/user-attachments/assets/594a03e3-466a-4719-aee0-002150d44b39
+
+<br/>
 
 ## ✨ Key Features
 
