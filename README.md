@@ -84,7 +84,7 @@ https://github.com/user-attachments/assets/594a03e3-466a-4719-aee0-002150d44b39
 - Frontend: HTML5, CSS3, Vanilla JavaScript hosted on Vercel with Chart.js for sensor data visualization
 - Backend: Python 3.9, Flask 2.3.3, TensorFlow 2.15, MobileNetV2, JWT authentication hosted on Render
 - Database: Supabase PostgreSQL with Row Level Security for user profiles, predictions, and sensor readings
-- Hardware: Raspberry Pi 4 with pH sensor (Analog pH Meter V2) and temperature sensor (DS18B20)
+- Hardware: ESP-8266 4 with pH sensor (Analog pH Meter V2) and temperature sensor (DS18B20)
 
 ## 📡 API Endpoints
 - POST /predict - Upload fish image for disease diagnosis (returns disease name and confidence score)
