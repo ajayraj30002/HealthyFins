@@ -1,7 +1,7 @@
 # 🐟 HealthyFins - Complete Fish Health Management System 
 
 [![Live Demo](https://img.shields.io/badge/demo-LIVE-brightgreen)](https://fish-app.vercel.app)
-[![GitHub Repo](https://img.shields.io/badge/repo-HealthyFins-blue)](https://github.com/yourusername/healthyfins)
+[![GitHub Repo](https://img.shields.io/badge/repo-HealthyFins-blue)](https://github.com/yourusername/healthyfins) 
 [![Python](https://img.shields.io/badge/Python-3.9-blue?logo=python)](https://python.org)
 [![TensorFlow](https://img.shields.io/badge/TensorFlow-2.15-orange?logo=tensorflow)](https://tensorflow.org)
 [![Flask](https://img.shields.io/badge/Flask-2.3.3-black?logo=flask)](https://flask.palletsprojects.com)
