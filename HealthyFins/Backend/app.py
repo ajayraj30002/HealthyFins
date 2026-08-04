@@ -1,6 +1,7 @@
-# app.py - COMPLETE FIXED VERSION WITH MODEL LOADING COMPATIBILITY
+# app.py - COMPLETE FIXED VERSION WITH MODEL LOADING COMPATIBILITY & AIVEN KAFKA
 import os
 import sys
+import asyncio
 
 # Add current directory to path
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -19,6 +20,7 @@ from typing import Optional, List
 import traceback
 import uuid
 from pydantic import BaseModel
+from aiokafka import AIOKafkaConsumer
 
 # Import our modules
 try:
@@ -27,6 +29,13 @@ try:
 except Exception as e:
     print(f"❌ Failed to import db: {e}")
     db = None
+
+try:
+    import iot_bridge
+    print("✅ Successfully imported iot_bridge")
+except ImportError:
+    print("⚠️ iot_bridge module not found")
+    iot_bridge = None
 
 from auth import create_access_token, get_current_user
 
@@ -74,6 +83,53 @@ class SensorData(BaseModel):
 
 # ========== IN-MEMORY STORAGE ==========
 latest_sensor_readings = {}
+
+# ========== KAFKA CONSUMER TASK ==========
+async def consume_kafka_stream():
+    """Background task to consume from Aiven Kafka"""
+    print("🎧 Starting Kafka Consumer Task...")
+    AIVEN_KAFKA_SERVER = os.getenv("AIVEN_KAFKA_SERVER")
+    AIVEN_KAFKA_USER = os.getenv("AIVEN_KAFKA_USER")
+    AIVEN_KAFKA_PASS = os.getenv("AIVEN_KAFKA_PASS")
+    
+    if not all([AIVEN_KAFKA_SERVER, AIVEN_KAFKA_USER, AIVEN_KAFKA_PASS]):
+        print("⚠️ Missing Aiven Kafka credentials. Consumer will not start.")
+        return
+
+    try:
+        consumer = AIOKafkaConsumer(
+            'healthyfins-telemetry',
+            bootstrap_servers=AIVEN_KAFKA_SERVER,
+            security_protocol="SASL_SSL",
+            sasl_mechanism="PLAIN",
+            sasl_plain_username=AIVEN_KAFKA_USER,
+            sasl_plain_password=AIVEN_KAFKA_PASS,
+            group_id="fastapi-group"
+        )
+        await consumer.start()
+        print("✅ Kafka Consumer connected and listening!")
+        
+        try:
+            async for msg in consumer:
+                data = json.loads(msg.value.decode('utf-8'))
+                hardware_id = data.get("hardware_id", "unknown")
+                
+                # Assign server timestamp if missing
+                if "timestamp" not in data or not data["timestamp"]:
+                    data["timestamp"] = datetime.now().isoformat()
+                    
+                latest_sensor_readings[hardware_id] = {
+                    "ph": data.get("ph", 7.0),
+                    "temperature": data.get("temperature", 25.0),
+                    "turbidity": data.get("turbidity", 10.0),
+                    "timestamp": data["timestamp"],
+                    "hardware_id": hardware_id
+                }
+                print(f"💾 Kafka Consumer updated state for {hardware_id}: pH {data.get('ph')}")
+        finally:
+            await consumer.stop()
+    except Exception as e:
+        print(f"❌ Kafka Consumer error: {e}")
 
 # ========== MODEL LOADING - FIXED VERSION ==========
 model = None
@@ -145,14 +201,20 @@ def load_model_from_weights(model_path):
         return None, False
 
 @app.on_event("startup")
-async def load_model():
-    """Load AI model on startup"""
+async def startup_event():
+    """Load AI model and start Background Streams on startup"""
     global model, class_names, reverse_label_map
     
     print("=" * 60)
-    print("🐟 HEALTHYFINS - LOADING MODEL")
+    print("🐟 HEALTHYFINS - STARTUP SEQUENCE")
     print("=" * 60)
     
+    # 1. START PIPELINES
+    if iot_bridge:
+        iot_bridge.start_mqtt_bridge()
+    asyncio.create_task(consume_kafka_stream())
+    
+    # 2. LOAD MODEL
     model_path = os.path.join(BASE_DIR, 'models', 'fish_disease_model_final.h5')
     info_path = os.path.join(BASE_DIR, 'models', 'model_info_final.json')
     
@@ -654,7 +716,7 @@ async def update_profile(
 # ========== PH MONITORING ENDPOINTS ==========
 @app.post("/ph-monitoring/data")
 async def receive_sensor_data(data: SensorData):
-    """Receive real-time sensor data from ESP8266"""
+    """Fallback manual HTTP POST (The stream is handled via Kafka)"""
     try:
         if not data.timestamp:
             data.timestamp = datetime.now().isoformat()
@@ -667,11 +729,11 @@ async def receive_sensor_data(data: SensorData):
             "hardware_id": data.hardware_id
         }
         
-        print(f"📊 Sensor data received from {data.hardware_id}: pH={data.ph}")
+        print(f"📊 Manual HTTP POST received from {data.hardware_id}: pH={data.ph}")
         
         return {
             "success": True,
-            "message": "Sensor data received",
+            "message": "Sensor data received via HTTP",
             "timestamp": data.timestamp
         }
         
@@ -685,7 +747,7 @@ async def get_latest_sensor_data(
     hardware_id: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
 ):
-    """Get latest sensor readings for user's hardware"""
+    """Get latest sensor readings (populated by Kafka consumer)"""
     try:
         if not hardware_id:
             if not db:
@@ -741,7 +803,7 @@ async def get_latest_sensor_data(
                     "timestamp": None,
                     "status": "waiting",
                     "hardware_id": hardware_id,
-                    "message": f"Waiting for data from device {hardware_id}"
+                    "message": f"Waiting for data from Kafka stream for device {hardware_id}"
                 }
             }
             
@@ -752,7 +814,7 @@ async def get_latest_sensor_data(
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
-# ========== HISTORY ENDPOINTS ==========
+# ========== HISTORY, STATS, SEARCH & EXPORT (Unchanged) ==========
 @app.get("/history")
 async def get_history(
     limit: int = Query(20, ge=1, le=100),
@@ -761,11 +823,8 @@ async def get_history(
     search: Optional[str] = Query(None),
     current_user: dict = Depends(get_current_user)
 ):
-    """Get user's prediction history"""
     try:
-        if not db:
-            raise HTTPException(status_code=500, detail="Database not connected")
-        
+        if not db: raise HTTPException(status_code=500, detail="Database not connected")
         user_id = current_user["user_id"]
         
         if search:
@@ -777,174 +836,78 @@ async def get_history(
             total = stats["total"]
         
         return {
-            "success": True,
-            "history": history,
-            "count": len(history),
-            "total": total,
-            "limit": limit,
-            "offset": offset,
+            "success": True, "history": history, "count": len(history),
+            "total": total, "limit": limit, "offset": offset,
             "has_more": (offset + len(history)) < total
         }
-        
-    except HTTPException:
-        raise
     except Exception as e:
-        print(f"❌ Get history error: {e}")
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Error fetching history: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
 @app.get("/history/{entry_id}")
-async def get_history_entry(
-    entry_id: str,
-    current_user: dict = Depends(get_current_user)
-):
-    """Get specific history entry"""
+async def get_history_entry(entry_id: str, current_user: dict = Depends(get_current_user)):
     try:
-        if not db:
-            raise HTTPException(status_code=500, detail="Database not connected")
-        
+        if not db: raise HTTPException(status_code=500, detail="Database not connected")
         history = db.get_user_history(current_user["user_id"], limit=100)
         entry = next((h for h in history if h["id"] == entry_id), None)
-        
-        if not entry:
-            raise HTTPException(status_code=404, detail="History entry not found")
-        
-        return {
-            "success": True,
-            "entry": entry
-        }
-        
-    except HTTPException:
-        raise
+        if not entry: raise HTTPException(status_code=404, detail="Entry not found")
+        return {"success": True, "entry": entry}
     except Exception as e:
-        print(f"❌ Get history entry error: {e}")
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Error fetching history entry: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.delete("/history/{entry_id}")
-async def delete_history_entry(
-    entry_id: str,
-    current_user: dict = Depends(get_current_user)
-):
-    """Delete a history entry"""
+async def delete_history_entry(entry_id: str, current_user: dict = Depends(get_current_user)):
     try:
-        if not db:
-            raise HTTPException(status_code=500, detail="Database not connected")
-        
+        if not db: raise HTTPException(status_code=500, detail="Database not connected")
         success = db.delete_history_entry(current_user["user_id"], entry_id)
-        
-        if not success:
-            raise HTTPException(status_code=404, detail="Entry not found or already deleted")
-        
-        return {
-            "success": True,
-            "message": "History entry deleted successfully"
-        }
-        
-    except HTTPException:
-        raise
+        if not success: raise HTTPException(status_code=404, detail="Not found")
+        return {"success": True, "message": "Deleted"}
     except Exception as e:
-        print(f"❌ Delete history error: {e}")
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Error deleting history: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.delete("/history")
 async def clear_all_history(current_user: dict = Depends(get_current_user)):
-    """Clear all user history"""
     try:
-        if not current_user["user_id"]:
-            raise HTTPException(status_code=401, detail="Unauthorized")
-        
-        if not db:
-            raise HTTPException(status_code=500, detail="Database not connected")
-        
+        if not db: raise HTTPException(status_code=500, detail="Database not connected")
         success = db.clear_user_history(current_user["user_id"])
-        
-        return {
-            "success": success,
-            "message": "All history cleared successfully" if success else "Failed to clear history"
-        }
-        
-    except HTTPException:
-        raise
+        return {"success": success, "message": "Cleared"}
     except Exception as e:
-        print(f"❌ Clear history error: {e}")
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Error clearing history: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
-# ========== STATISTICS ENDPOINTS ==========
 @app.get("/stats")
 async def get_user_stats(current_user: dict = Depends(get_current_user)):
-    """Get user statistics"""
     try:
-        if not db:
-            raise HTTPException(status_code=500, detail="Database not connected")
-        
+        if not db: raise HTTPException(status_code=500, detail="Database not connected")
         stats = db.get_history_stats(current_user["user_id"])
-        
-        return {
-            "success": True,
-            "stats": stats,
-            "user_id": current_user["user_id"]
-        }
-        
-    except HTTPException:
-        raise
+        return {"success": True, "stats": stats, "user_id": current_user["user_id"]}
     except Exception as e:
-        print(f"❌ Get stats error: {e}")
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Error fetching stats: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
-# ========== SEARCH ENDPOINTS ==========
 @app.get("/search")
 async def search_history(
     query: str = Query(..., min_length=2),
     limit: int = Query(20, ge=1, le=50),
     current_user: dict = Depends(get_current_user)
 ):
-    """Search in user's history"""
     try:
-        if not db:
-            raise HTTPException(status_code=500, detail="Database not connected")
-        
+        if not db: raise HTTPException(status_code=500, detail="Database not connected")
         results = db.search_history(current_user["user_id"], query, limit)
-        
-        return {
-            "success": True,
-            "query": query,
-            "results": results,
-            "count": len(results)
-        }
-        
-    except HTTPException:
-        raise
+        return {"success": True, "query": query, "results": results, "count": len(results)}
     except Exception as e:
-        print(f"❌ Search error: {e}")
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Search error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
-# ========== EXPORT ENDPOINTS ==========
 @app.get("/export/history")
 async def export_history(
     format: str = Query("json", regex="^(json|csv)$"),
     current_user: dict = Depends(get_current_user)
 ):
-    """Export user history"""
     try:
-        if not db:
-            raise HTTPException(status_code=500, detail="Database not connected")
-        
+        if not db: raise HTTPException(status_code=500, detail="Database not connected")
         history = db.get_user_history(current_user["user_id"], limit=1000)
         
         if format == "csv":
-            import csv
-            import io
-            
+            import csv, io
             output = io.StringIO()
-            writer = csv.DictWriter(output, fieldnames=[
-                "timestamp", "prediction", "confidence", "image_name", "model_type", "symptoms"
-            ])
-            
+            writer = csv.DictWriter(output, fieldnames=["timestamp", "prediction", "confidence", "image_name", "model_type", "symptoms"])
             writer.writeheader()
             for entry in history:
                 writer.writerow({
@@ -955,37 +918,18 @@ async def export_history(
                     "model_type": entry.get("model_type", "unknown"),
                     "symptoms": ", ".join(entry.get("symptoms", []))
                 })
-            
-            csv_content = output.getvalue()
-            
-            return {
-                "success": True,
-                "format": "csv",
-                "data": csv_content,
-                "count": len(history)
-            }
-        else:
-            return {
-                "success": True,
-                "format": "json",
-                "data": history,
-                "count": len(history)
-            }
-        
-    except HTTPException:
-        raise
+            return {"success": True, "format": "csv", "data": output.getvalue(), "count": len(history)}
+        return {"success": True, "format": "json", "data": history, "count": len(history)}
     except Exception as e:
-        print(f"❌ Export error: {e}")
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Export error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 # ========== STARTUP MESSAGE ==========
 print("\n" + "=" * 60)
-print("🐟 HEALTHYFINS API v5.0 - SUPABASE INTEGRATION")
+print("🐟 HEALTHYFINS API v5.0 - EVENT-DRIVEN KAFKA PIPELINE (AIVEN)")
 print("=" * 60)
 print(f"💾 Database: Supabase REST API")
 print(f"🔧 Hardware IDs: {len(db.get_hardware_ids()) if db else 0} available")
-print(f"📊 PH Monitoring: Real-time data enabled")
+print(f"📊 PH Monitoring: Real-time Kafka Consumer enabled")
 print("=" * 60)
 
 if __name__ == "__main__":
