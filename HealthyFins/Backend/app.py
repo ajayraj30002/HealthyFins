@@ -1,7 +1,8 @@
-# app.py - COMPLETE FIXED VERSION WITH MODEL LOADING COMPATIBILITY & AIVEN KAFKA
+# app.py - COMPLETE FIXED VERSION WITH SSL KAFKA FIX & RENDER HEALTH CHECK
 import os
 import sys
 import asyncio
+import ssl  # Added SSL import for Kafka
 
 # Add current directory to path
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -96,6 +97,9 @@ async def consume_kafka_stream():
         print("⚠️ Missing Aiven Kafka credentials. Consumer will not start.")
         return
 
+    # Create the SSL Context required by aiokafka
+    ssl_context = ssl.create_default_context()
+
     try:
         consumer = AIOKafkaConsumer(
             'healthyfins-telemetry',
@@ -104,6 +108,7 @@ async def consume_kafka_stream():
             sasl_mechanism="PLAIN",
             sasl_plain_username=AIVEN_KAFKA_USER,
             sasl_plain_password=AIVEN_KAFKA_PASS,
+            ssl_context=ssl_context,  # Added SSL Context
             group_id="fastapi-group"
         )
         await consumer.start()
@@ -310,6 +315,11 @@ async def startup_event():
     print("=" * 60)
 
 # ========== HEALTH CHECK ==========
+@app.head("/")
+async def head_root():
+    """Health check ping for Render monitors"""
+    return JSONResponse(content={"status": "ok"})
+
 @app.get("/")
 async def root():
     """Root endpoint with API info"""
