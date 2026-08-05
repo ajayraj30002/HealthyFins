@@ -152,8 +152,9 @@ healthyfins/
 └── README.md                              
 ```
 
-```
+
 ## 👨‍💻 Contact
+```
 - GitHub: https://github.com/ajayraj30002
 - LinkedIn: https://www.linkedin.com/in/ajay-raj-3ee2
 ```
