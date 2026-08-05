@@ -20,12 +20,18 @@ def get_kafka_producer():
     global producer
     if producer is None and AIVEN_KAFKA_SERVER:
         try:
+            # Create unverified SSL context for the Producer to bypass Aiven's custom CA
+            context = ssl.create_default_context()
+            context.check_hostname = False
+            context.verify_mode = ssl.CERT_NONE
+            
             producer = KafkaProducer(
                 bootstrap_servers=AIVEN_KAFKA_SERVER,
                 security_protocol="SASL_SSL",
                 sasl_mechanism="PLAIN",
                 sasl_plain_username=AIVEN_KAFKA_USER,
                 sasl_plain_password=AIVEN_KAFKA_PASS,
+                ssl_context=context,  # <-- Applied the SSL bypass here
                 value_serializer=lambda v: json.dumps(v).encode('utf-8')
             )
         except Exception as e:
