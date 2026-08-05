@@ -150,11 +150,12 @@ healthyfins/
 ├── esp8266/              # C++ code for hardware nodes
 ├── training/             # Jupyter Notebooks for model training
 └── README.md                              
+```
 
-
-
+```
 ## 👨‍💻 Contact
 - GitHub: https://github.com/ajayraj30002
 - LinkedIn: https://www.linkedin.com/in/ajay-raj-3ee2
+```
 
 
