@@ -87,7 +87,7 @@ latest_sensor_readings = {}
 
 # ========== KAFKA CONSUMER TASK ==========
 async def consume_kafka_stream():
-    """Background task to consume from Aiven Kafka"""
+    """Background task to consume from Aiven Kafka with Enterprise Retries"""
     print("🎧 Starting Kafka Consumer Task...")
     AIVEN_KAFKA_SERVER = os.getenv("AIVEN_KAFKA_SERVER")
     AIVEN_KAFKA_USER = os.getenv("AIVEN_KAFKA_USER")
@@ -102,41 +102,54 @@ async def consume_kafka_stream():
     ssl_context.check_hostname = False
     ssl_context.verify_mode = ssl.CERT_NONE
 
-    try:
-        consumer = AIOKafkaConsumer(
-            'healthyfins-telemetry',
-            bootstrap_servers=AIVEN_KAFKA_SERVER,
-            security_protocol="SASL_SSL",
-            sasl_mechanism="PLAIN",
-            sasl_plain_username=AIVEN_KAFKA_USER,
-            sasl_plain_password=AIVEN_KAFKA_PASS,
-            ssl_context=ssl_context,  # <-- Applied the SSL bypass here
-            group_id="fastapi-group"
-        )
-        await consumer.start()
-        print("✅ Kafka Consumer connected and listening!")
-        
+    consumer = AIOKafkaConsumer(
+        'healthyfins-telemetry',
+        bootstrap_servers=AIVEN_KAFKA_SERVER,
+        security_protocol="SASL_SSL",
+        sasl_mechanism="PLAIN",
+        sasl_plain_username=AIVEN_KAFKA_USER,
+        sasl_plain_password=AIVEN_KAFKA_PASS,
+        ssl_context=ssl_context,
+        group_id="fastapi-group"
+    )
+
+    # 🔄 ENTERPRISE RETRY LOOP
+    connected = False
+    for attempt in range(1, 6):
         try:
-            async for msg in consumer:
-                data = json.loads(msg.value.decode('utf-8'))
-                hardware_id = data.get("hardware_id", "unknown")
+            await consumer.start()
+            connected = True
+            print("✅ Kafka Consumer connected and listening!")
+            break  # Break out of the loop if successful!
+        except Exception as e:
+            print(f"⏳ Kafka Coordinator not ready (Attempt {attempt}/5) - Retrying in 5s... Error: {e}")
+            await asyncio.sleep(5)  # Wait 5 seconds before trying again
+
+    if not connected:
+        print("❌ Kafka failed to connect after 5 attempts. Consumer task shutting down.")
+        return
+
+    try:
+        async for msg in consumer:
+            data = json.loads(msg.value.decode('utf-8'))
+            hardware_id = data.get("hardware_id", "unknown")
+            
+            # Assign server timestamp if missing
+            if "timestamp" not in data or not data["timestamp"]:
+                data["timestamp"] = datetime.now().isoformat()
                 
-                # Assign server timestamp if missing
-                if "timestamp" not in data or not data["timestamp"]:
-                    data["timestamp"] = datetime.now().isoformat()
-                    
-                latest_sensor_readings[hardware_id] = {
-                    "ph": data.get("ph", 7.0),
-                    "temperature": data.get("temperature", 25.0),
-                    "turbidity": data.get("turbidity", 10.0),
-                    "timestamp": data["timestamp"],
-                    "hardware_id": hardware_id
-                }
-                print(f"💾 Kafka Consumer updated state for {hardware_id}: pH {data.get('ph')}")
-        finally:
-            await consumer.stop()
+            latest_sensor_readings[hardware_id] = {
+                "ph": data.get("ph", 7.0),
+                "temperature": data.get("temperature", 25.0),
+                "turbidity": data.get("turbidity", 10.0),
+                "timestamp": data["timestamp"],
+                "hardware_id": hardware_id
+            }
+            print(f"💾 Kafka Consumer updated state for {hardware_id}: pH {data.get('ph')}")
     except Exception as e:
-        print(f"❌ Kafka Consumer error: {e}")
+        print(f"❌ Kafka Consumer crashed during streaming: {e}")
+    finally:
+        await consumer.stop()
 
 # ========== MODEL LOADING - FIXED VERSION ==========
 model = None
