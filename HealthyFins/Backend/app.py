@@ -97,8 +97,10 @@ async def consume_kafka_stream():
         print("⚠️ Missing Aiven Kafka credentials. Consumer will not start.")
         return
 
-    # Create the SSL Context required by aiokafka
+    # Create the SSL Context and DISABLE strict verification
     ssl_context = ssl.create_default_context()
+    ssl_context.check_hostname = False
+    ssl_context.verify_mode = ssl.CERT_NONE
 
     try:
         consumer = AIOKafkaConsumer(
@@ -108,7 +110,7 @@ async def consume_kafka_stream():
             sasl_mechanism="PLAIN",
             sasl_plain_username=AIVEN_KAFKA_USER,
             sasl_plain_password=AIVEN_KAFKA_PASS,
-            ssl_context=ssl_context,  # Added SSL Context
+            ssl_context=ssl_context,  # <-- Applied the SSL bypass here
             group_id="fastapi-group"
         )
         await consumer.start()
